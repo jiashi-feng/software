@@ -31,6 +31,7 @@ import TabooSettings from '../TabooSettings';
 import AddCustomTaboo from '../AddCustomTaboo';
 import JoinFamily from '../JoinFamily';
 import CreateFamily from '../CreateFamily';
+import FamilyTaskDetail from '../Family_task_detail';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -212,7 +213,17 @@ const AppNavigator = () => {
         <Stack.Screen 
           name="GroupChat" 
           component={GroupChat}
-          options={{ title: '群聊' }}
+          options={{ title: '群聊' ,
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="FamilyTaskDetail" 
+          component={FamilyTaskDetail}
+          options={{ 
+            title: '家庭任务',
+            headerShown: false,
+          }}
         />
         <Stack.Screen 
           name="Ranking" 
@@ -227,7 +238,10 @@ const AppNavigator = () => {
         <Stack.Screen 
           name="TaskDetail" 
           component={TaskDetail}
-          options={{ title: '任务详情' }}
+          options={{ title: '任务详情' ,
+            headerShown: false, 
+          }}
+          
         />
         <Stack.Screen 
           name="CreateTask" 

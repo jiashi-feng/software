@@ -6,6 +6,7 @@ import {
   Image,
   ImageBackground,
   Dimensions,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -155,6 +156,7 @@ const Shopping = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState('全部');
   const [dialogVisible, setDialogVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [userPoints, setUserPoints] = useState(2580);
   const scrollViewRef = React.useRef(null);
 
   const handleRangeSelect = (range) => {
@@ -212,7 +214,7 @@ const Shopping = ({ navigation }) => {
         <View style={styles.pointsSection}>
           <View style={styles.pointsDisplay}>
             <CustomIcon name="coin" size={24} color={COLORS.primary} />
-            <Text style={styles.pointsText}>2580</Text>
+            <Text style={styles.pointsText}>{userPoints}</Text>
           </View>
           <Button
             mode="contained"
@@ -308,14 +310,25 @@ const Shopping = ({ navigation }) => {
             <Paragraph>
               确定要使用 {selectedProduct?.points} 积分兑换 {selectedProduct?.name} 吗？
             </Paragraph>
+            <Paragraph style={{ marginTop: 8, color: COLORS.primary }}>
+              当前积分：{userPoints}
+            </Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setDialogVisible(false)}>取消</Button>
             <Button
               mode="contained"
               onPress={() => {
-                // 处理兑换逻辑
-                setDialogVisible(false);
+                if (userPoints >= selectedProduct?.points) {
+                  // 更新用户积分
+                  setUserPoints(prevPoints => prevPoints - selectedProduct?.points);
+                  // 关闭对话框
+                  setDialogVisible(false);
+                  // 这里可以添加兑换成功的提示或其他逻辑
+                } else {
+                  // 积分不足的提示
+                  Alert.alert('积分不足', '您的积分不足以兑换该商品');
+                }
               }}
             >
               确认兑换

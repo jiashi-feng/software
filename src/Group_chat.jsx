@@ -73,7 +73,7 @@ const mockMembers = [
   },
 ];
 
-const GroupChat = () => {
+const GroupChat = ({ navigation }) => {
   const [message, setMessage] = useState('');
   const [showMembers, setShowMembers] = useState(false);
   const theme = useTheme();
@@ -107,12 +107,18 @@ const GroupChat = () => {
           <IconButton
             icon="arrow-left"
             size={24}
-            onPress={() => {}}
+            onPress={() => navigation.goBack()}
           />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>家庭群聊</Text>
             <Text style={styles.headerSubtitle}>3 位成员</Text>
           </View>
+          <IconButton
+            icon="clipboard-list"
+            size={24}
+            onPress={() => navigation.navigate('FamilyTaskDetail')}
+            style={styles.taskIcon}
+          />
           <IconButton
             icon="account-group"
             size={24}
@@ -302,6 +308,9 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 8,
     backgroundColor: '#fff',
+  },
+  taskIcon: {
+    marginLeft: 8,
   },
 });
 

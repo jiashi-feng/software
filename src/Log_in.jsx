@@ -171,6 +171,7 @@ const LogIn = ({ navigation }) => {
               mode="outlined"
               style={styles.input}
               keyboardType="email-address"
+              
               autoCapitalize="none"
               error={emailTouched && !!emailError}
             />
@@ -226,48 +227,46 @@ const LogIn = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-        <Surface style={styles.surface}>
-          <View style={styles.logoContainer}>
-            <Icon name="home-heart" size={100} color={theme.colors.primary} />
-            <Text style={styles.title}>勤云小筑</Text>
-          </View>
+        <View style={styles.logoContainer}>
+          <Icon name="home-heart" size={100} color={theme.colors.primary} />
+          <Text style={styles.title}>家庭任务智能管理系统</Text>
+        </View>
 
-          <View style={styles.buttonsContainer}>
-            <Button
-              mode="contained"
-              onPress={showLoginModal}
-              style={styles.mainButton}
-              contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonLabel}
-            >
-              登录
-            </Button>
-            
-            <Button
-              mode="contained"
-              onPress={handleStartRegister}
-              style={[styles.mainButton, { backgroundColor: theme.colors.accent }]}
-              contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonLabel}
-            >
-              注册
-            </Button>
-            
-            <Button
-              mode="outlined"
-              onPress={handleGuest}
-              style={styles.mainButton}
-              contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonLabel}
-            >
-              游客访问
-            </Button>
-          </View>
+        <View style={styles.buttonsContainer}>
+          <Button
+            mode="contained"
+            onPress={showLoginModal}
+            style={[styles.mainButton, { backgroundColor: 'rgba(249, 239, 239, 0.22)' }]}
+            contentStyle={styles.buttonContent}
+            labelStyle={[styles.buttonLabel, { color: 'rgb(48, 21, 221)' }]}
+          >
+            登录
+          </Button>
+          
+          <Button
+            mode="contained"
+            onPress={handleStartRegister}
+            style={[styles.mainButton, { backgroundColor: 'rgba(255, 255, 255, 0.22)' }]}
+            contentStyle={styles.buttonContent}
+            labelStyle={[styles.buttonLabel, { color: 'rgb(104, 35, 207)' }]}
+          >
+            注册
+          </Button>
+          
+          <Button
+            mode="outlined"
+            onPress={handleGuest}
+            style={styles.mainButton}
+            contentStyle={styles.buttonContent}
+            labelStyle={styles.buttonLabel}
+          >
+            游客访问
+          </Button>
+        </View>
 
-          <View style={styles.thirdPartyLoginHome}>
-            {renderThirdPartyLogin()}
-          </View>
-        </Surface>
+        <View style={styles.thirdPartyLoginHome}>
+          {renderThirdPartyLogin()}
+        </View>
         
         {renderLoginForm()}
       </KeyboardAvoidingView>
@@ -285,12 +284,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 40,
   },
-  surface: {
-    padding: 30,
-    borderRadius: 15,
-    elevation: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-  },
   logoContainer: {
     alignItems: 'center',
     marginBottom: 40,
@@ -299,20 +292,22 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     marginTop: 15,
-    color: '#333',
+    color: '#fff',
   },
   buttonsContainer: {
     gap: 20,
   },
   mainButton: {
-    borderRadius: 10,
+    borderRadius: 8,
     elevation: 3,
+    width: '80%',
+    alignSelf: 'center',
   },
   buttonContent: {
-    height: 55,
+    height: 45,
   },
   buttonLabel: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   input: {
@@ -332,7 +327,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     marginVertical: 10,
-    color: '#666',
+    color: '#fff',
     fontSize: 14,
   },
   socialButtons: {

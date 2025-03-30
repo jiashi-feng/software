@@ -4,7 +4,7 @@
 ![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-green.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-勤云小筑是一款家务管理应用，帮助家庭成员协作完成家务任务，提高家庭生活质量和沟通效率。
+勤云小筑是一款家庭任务智能管理应用，帮助家庭成员协作完成家务任务，提高家庭生活质量和沟通效率。
 
 ## 📱 功能特点
 
@@ -15,6 +15,7 @@
 - 🏆 成就系统与排行榜
 - 🎯 个性化设置
 - 🤖 AI 助理（支持语音交互）
+- 📅 社区联动服务
 
 ## 🔧 技术栈
 
@@ -26,7 +27,7 @@
 - React Native Reanimated
 - React Native Gesture Handler
 - React Native Voice
-.....
+- .....
 
 ## 📂 项目结构
 
@@ -48,6 +49,7 @@ src/
     └── Ability_choice.jsx# 能力选择
     └── Achievement.jsx   # 成就界面
     └── AddCustomTaboo.jsx# 添加禁忌
+    .......
 
 ```
 
@@ -126,8 +128,5 @@ npm run ios
 有任何问题或建议，欢迎通过以下方式联系我们：
 
 - 邮箱: 259344725@qq.com
-- 微信: 
-
----
 
 祝您使用愉快！

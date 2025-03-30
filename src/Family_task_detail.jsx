@@ -11,50 +11,45 @@ import {
   IconButton,
   TextInput,
   Button,
+  Menu,
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 
-const TaskDetail = ({ navigation }) => {
+const FamilyTaskDetail = ({ navigation }) => {
   const [tasks, setTasks] = useState([
     { 
       id: 1, 
       content: '整理杂物', 
       completed: false,
       points: 30,
-      deadline: '今天 18:00'
+      deadline: '今天 18:00',
+      assignee: '妈妈'
     },
     { 
       id: 2, 
-      content: '扫地', 
+      content: '修理水管', 
       completed: false,
-      points: 20,
-      deadline: '今天 20:00'
+      points: 40,
+      deadline: '今天 20:00',
+      assignee: '爸爸'
     },
     { 
       id: 3, 
-      content: '拖地', 
+      content: '打扫卫生间', 
       completed: false,
       points: 25,
-      deadline: '明天 10:00'
-    },
-    { 
-      id: 4, 
-      content: '擦桌子', 
-      completed: false,
-      points: 15,
-      deadline: '今天 19:00'
-    },
-    { 
-      id: 5, 
-      content: '清理垃圾', 
-      completed: false,
-      points: 10,
-      deadline: '今天 21:00'
+      deadline: '明天 10:00',
+      assignee: '我'
     },
   ]);
+  
   const [newTask, setNewTask] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [selectedAssignee, setSelectedAssignee] = useState(null);
+  const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
+
+  const familyMembers = ['爸爸', '妈妈', '我'];
 
   const handleTaskToggle = (taskId) => {
     setTasks(tasks.map(task => 
@@ -63,18 +58,20 @@ const TaskDetail = ({ navigation }) => {
   };
 
   const handleAddTask = () => {
-    if (newTask.trim()) {
+    if (newTask.trim() && selectedAssignee) {
       setTasks([
         ...tasks,
         {
           id: Date.now(),
           content: newTask.trim(),
           completed: false,
-          points: 20, // 默认积分
-          deadline: '今天 20:00' // 默认截止时间
+          points: 20,
+          deadline: '今天 20:00',
+          assignee: selectedAssignee
         }
       ]);
       setNewTask('');
+      setSelectedAssignee(null);
       setIsAddingTask(false);
     }
   };
@@ -88,9 +85,12 @@ const TaskDetail = ({ navigation }) => {
         >
           {task.completed && <Icon name="check" size={16} color="#FFF" />}
         </TouchableOpacity>
-        <Text style={[styles.taskText, task.completed && styles.completedTaskText]}>
-          {task.content}
-        </Text>
+        <View style={styles.taskContent}>
+          <Text style={[styles.taskText, task.completed && styles.completedTaskText]}>
+            {task.content}
+          </Text>
+          <Text style={styles.assigneeText}>指派给：{task.assignee}</Text>
+        </View>
       </View>
       <View style={styles.taskInfo}>
         <View style={styles.pointsContainer}>
@@ -121,7 +121,7 @@ const TaskDetail = ({ navigation }) => {
             color="#6C5CE7"
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>任务详情</Text>
+        <Text style={styles.headerTitle}>家庭任务</Text>
         <View style={styles.backButtonContainer} />
       </View>
 
@@ -161,12 +161,38 @@ const TaskDetail = ({ navigation }) => {
             onChangeText={setNewTask}
             style={styles.addTaskInput}
             mode="outlined"
-            autoFocus
           />
+          <Menu
+            visible={showAssigneeMenu}
+            onDismiss={() => setShowAssigneeMenu(false)}
+            anchor={
+              <Button
+                mode="outlined"
+                onPress={() => setShowAssigneeMenu(true)}
+                style={styles.assigneeButton}
+              >
+                {selectedAssignee || '选择指派对象'}
+              </Button>
+            }
+          >
+            {familyMembers.map(member => (
+              <Menu.Item
+                key={member}
+                onPress={() => {
+                  setSelectedAssignee(member);
+                  setShowAssigneeMenu(false);
+                }}
+                title={member}
+              />
+            ))}
+          </Menu>
           <View style={styles.addTaskButtons}>
             <Button
               mode="text"
-              onPress={() => setIsAddingTask(false)}
+              onPress={() => {
+                setIsAddingTask(false);
+                setSelectedAssignee(null);
+              }}
               style={styles.cancelButton}
             >
               取消
@@ -174,7 +200,7 @@ const TaskDetail = ({ navigation }) => {
             <Button
               mode="contained"
               onPress={handleAddTask}
-              disabled={!newTask.trim()}
+              disabled={!newTask.trim() || !selectedAssignee}
               style={styles.confirmButton}
             >
               确认
@@ -188,7 +214,7 @@ const TaskDetail = ({ navigation }) => {
           style={styles.addButton}
           icon="plus"
         >
-          添加新任务
+          添加家庭任务
         </Button>
       )}
     </LinearGradient>
@@ -206,6 +232,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 8,
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 20,
@@ -220,10 +247,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
   },
   taskBox: {
-    marginBottom: 16,
+    marginBottom: 20,
     borderRadius: 12,
     overflow: 'hidden',
     elevation: 2,
@@ -241,29 +268,53 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    backgroundColor: '#FFF',
   },
   taskMain: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  taskContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  taskText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 4,
+  },
+  assigneeText: {
+    fontSize: 13,
+    color: '#666',
   },
   taskInfo: {
     flexDirection: 'row',
-    marginLeft: 36, // 与任务内容对齐
+    marginLeft: 36,
+    marginTop: 4,
   },
   pointsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 20,
+    backgroundColor: '#FFF9E6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
   },
   pointsText: {
     marginLeft: 4,
     fontSize: 14,
-    color: '#666',
+    color: '#FFA000',
+    fontWeight: '500',
   },
   deadlineContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
   },
   deadlineText: {
     marginLeft: 4,
@@ -271,23 +322,17 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   checkbox: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     borderRadius: 4,
     borderWidth: 2,
     borderColor: '#9B7EDE',
-    marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxChecked: {
     backgroundColor: '#9B7EDE',
     borderColor: '#9B7EDE',
-  },
-  taskText: {
-    fontSize: 16,
-    color: '#333',
-    flex: 1,
   },
   completedTaskText: {
     textDecorationLine: 'line-through',
@@ -297,25 +342,34 @@ const styles = StyleSheet.create({
     padding: 16,
     margin: 16,
     borderRadius: 12,
+    backgroundColor: '#FFF',
+    elevation: 2,
   },
   addTaskInput: {
+    marginBottom: 12,
+    backgroundColor: '#FFF',
+  },
+  assigneeButton: {
     marginBottom: 12,
   },
   addTaskButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    marginTop: 8,
   },
   cancelButton: {
-    marginRight: 8,
+    marginRight: 12,
   },
   confirmButton: {
     backgroundColor: '#9B7EDE',
   },
   addButton: {
     margin: 16,
+    marginTop: 8,
     backgroundColor: '#9B7EDE',
     borderRadius: 8,
+    elevation: 2,
   },
 });
 
-export default TaskDetail; 
+export default FamilyTaskDetail; 

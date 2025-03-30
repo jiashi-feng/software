@@ -139,20 +139,28 @@ const CreatePost = ({ route, navigation }) => {
           <Text style={styles.label}>常用标签</Text>
           <View style={styles.commonTagsContainer}>
             {commonTags.map(tag => (
-              <Chip
-                key={tag}
-                onPress={() => {
-                  if (!tags.includes(tag)) {
-                    setTags([...tags, tag]);
-                  }
-                }}
-                style={[
-                  styles.commonTag,
-                  tags.includes(tag) && styles.selectedTag
-                ]}
-              >
-                {tag}
-              </Chip>
+             <Chip
+             key={tag}
+             onPress={() => {
+               if (!tags.includes(tag)) {
+                 setTags([...tags, tag]);
+               }
+             }}
+             style={[
+               {
+                 marginRight: 8,
+                 marginBottom: 8,
+                 backgroundColor: tags.includes(tag) ? '#E6E0FF' : '#FFFFFF',
+                 borderWidth: 1,
+                 borderColor: tags.includes(tag) ? '#E6E0FF' : '#E6E0FF',
+               }
+             ]}
+             textStyle={{
+               color: tags.includes(tag) ? '#666666' : '#666666'
+             }}
+           >
+             {tag}
+           </Chip>
             ))}
           </View>
 

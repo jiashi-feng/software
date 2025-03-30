@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -14,6 +14,9 @@ import {
   useTheme,
   Searchbar,
   Chip,
+  Portal,
+  Modal,
+  TextInput,
 } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPosts, setFilters, addPost, updatePost } from './store/slices/postsSlice';
@@ -32,6 +35,11 @@ const Community = ({ navigation }) => {
   const dispatch = useDispatch();
   const { items: posts, status, error, filters } = useSelector(state => state.posts);
   const theme = useTheme();
+  const [likedPosts, setLikedPosts] = useState(new Set());
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState(null);
+  const [newComment, setNewComment] = useState('');
+  const [selectedTasks, setSelectedTasks] = useState([]);
 
   useEffect(() => {
     if (status === 'idle') {
@@ -71,6 +79,52 @@ const Community = ({ navigation }) => {
     dispatch(setFilters({ category }));
   };
 
+  const handleLikePress = (postId) => {
+    const newLikedPosts = new Set(likedPosts);
+    if (likedPosts.has(postId)) {
+      newLikedPosts.delete(postId);
+      dispatch(updatePost({ 
+        id: postId, 
+        likes: posts.find(p => p.id === postId).likes - 1 
+      }));
+    } else {
+      newLikedPosts.add(postId);
+      dispatch(updatePost({ 
+        id: postId, 
+        likes: posts.find(p => p.id === postId).likes + 1 
+      }));
+    }
+    setLikedPosts(newLikedPosts);
+  };
+
+  const handleCommentPress = (postId) => {
+    setSelectedPostId(postId);
+    setCommentModalVisible(true);
+  };
+
+  const handleSubmitComment = () => {
+    if (newComment.trim() && selectedPostId) {
+      const selectedPost = posts.find(p => p.id === selectedPostId);
+      const updatedComments = [
+        ...selectedPost.comments,
+        {
+          id: Date.now().toString(),
+          author: '当前用户',
+          content: newComment.trim(),
+          timestamp: '刚刚'
+        }
+      ];
+      
+      dispatch(updatePost({
+        id: selectedPostId,
+        comments: updatedComments
+      }));
+
+      setNewComment('');
+      setCommentModalVisible(false);
+    }
+  };
+
   const filteredPosts = posts.filter(post => {
     const matchesCategory = filters.category === '全部' || post.category === filters.category;
     const matchesTags = filters.tags.length === 0 || 
@@ -100,136 +154,181 @@ const Community = ({ navigation }) => {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={status === 'loading'} onRefresh={onRefresh} />
-      }
-    >
-      <Surface style={styles.header}>
-        <Searchbar
-          placeholder="搜索家务经验"
-          onChangeText={handleSearch}
-          value={filters.searchQuery}
-          style={styles.searchBar}
-        />
-      </Surface>
-
+    <>
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoriesContainer}
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={status === 'loading'} onRefresh={onRefresh} />
+        }
       >
-        {categories.map(category => (
-          <Chip
-            key={category}
-            selected={filters.category === category}
-            onPress={() => handleCategoryChange(category)}
-            style={styles.categoryChip}
-          >
-            {category}
-          </Chip>
-        ))}
-      </ScrollView>
+        <Surface style={styles.header}>
+          <Searchbar
+            placeholder="搜索家务经验"
+            onChangeText={handleSearch}
+            value={filters.searchQuery}
+            style={styles.searchBar}
+          />
+        </Surface>
 
-      {filters.tags.length > 0 && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.selectedTagsContainer}
+          style={styles.categoriesContainer}
         >
-          {filters.tags.map(tag => (
+          {categories.map(category => (
             <Chip
-              key={tag}
-              selected
-              onClose={() => handleTagPress(tag)}
-              style={styles.selectedTag}
+              key={category}
+              selected={filters.category === category}
+              onPress={() => handleCategoryChange(category)}
+              style={styles.categoryChip}
             >
-              {tag}
+              {category}
             </Chip>
           ))}
         </ScrollView>
-      )}
 
-      <View style={styles.postsContainer}>
-        {filteredPosts.map(post => (
-          <Surface 
-            key={post.id} 
-            style={styles.postCard}
-            onPress={() => handlePostPress(post.id)}
+        {filters.tags.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.selectedTagsContainer}
           >
-            <View style={styles.postHeader}>
-              <View style={styles.authorInfo}>
-                <Avatar.Image
-                  size={40}
-                  source={post.author.avatar || CommonImages.avatar}
-                />
-                <View style={styles.authorText}>
-                  <Text style={styles.authorName}>{post.author.name}</Text>
-                  <Text style={styles.authorLevel}>{post.author.level}</Text>
+            {filters.tags.map(tag => (
+              <Chip
+                key={tag}
+                selected
+                onClose={() => handleTagPress(tag)}
+                style={styles.selectedTag}
+              >
+                {tag}
+              </Chip>
+            ))}
+          </ScrollView>
+        )}
+
+        <View style={styles.postsContainer}>
+          {filteredPosts.map(post => (
+            <Surface 
+              key={post.id} 
+              style={styles.postCard}
+              onPress={() => handlePostPress(post.id)}
+            >
+              <View style={styles.postHeader}>
+                <View style={styles.authorInfo}>
+                  <Avatar.Image
+                    size={40}
+                    source={post.author.avatar || CommonImages.avatar}
+                  />
+                  <View style={styles.authorText}>
+                    <Text style={styles.authorName}>{post.author.name}</Text>
+                    <Text style={styles.authorLevel}>{post.author.level}</Text>
+                  </View>
+                </View>
+                <Text style={styles.timestamp}>{post.timestamp}</Text>
+              </View>
+
+              <Text style={styles.postTitle}>{post.title}</Text>
+              <Text style={styles.postContent} numberOfLines={3}>
+                {post.content}
+              </Text>
+
+              {post.tags && post.tags.length > 0 && (
+                <View style={styles.postTags}>
+                  {post.tags.map(tag => (
+                    <Chip
+                      key={tag}
+                      onPress={() => handleTagPress(tag)}
+                      style={styles.postTag}
+                    >
+                      {tag}
+                    </Chip>
+                  ))}
+                </View>
+              )}
+
+              <View style={styles.postFooter}>
+                <View style={styles.actionButton}>
+                  <IconButton
+                    icon={likedPosts.has(post.id) ? "heart" : "heart-outline"}
+                    size={20}
+                    onPress={() => handleLikePress(post.id)}
+                    iconColor={likedPosts.has(post.id) ? '#E6E0FF' : '#666666'}
+                  />
+                  <Text>{post.likes}</Text>
+                </View>
+                <View style={styles.actionButton}>
+                  <IconButton
+                    icon="comment-outline"
+                    size={20}
+                    onPress={() => handleCommentPress(post.id)}
+                  />
+                  <Text>{post.comments.length}</Text>
+                </View>
+                <View style={styles.actionButton}>
+                  <IconButton
+                    icon="share-outline"
+                    size={20}
+                    onPress={() => {}}
+                  />
                 </View>
               </View>
-              <Text style={styles.timestamp}>{post.timestamp}</Text>
-            </View>
+            </Surface>
+          ))}
+        </View>
 
-            <Text style={styles.postTitle}>{post.title}</Text>
-            <Text style={styles.postContent} numberOfLines={3}>
-              {post.content}
-            </Text>
+        <Button
+          mode="contained"
+          onPress={() => navigation.navigate('CreatePost', {
+            onPostCreated: handleCreatePost
+          })}
+          style={styles.createPostButton}
+        >
+          发布经验
+        </Button>
+      </ScrollView>
 
-            {post.tags && post.tags.length > 0 && (
-              <View style={styles.postTags}>
-                {post.tags.map(tag => (
-                  <Chip
-                    key={tag}
-                    onPress={() => handleTagPress(tag)}
-                    style={styles.postTag}
-                  >
-                    {tag}
-                  </Chip>
-                ))}
-              </View>
-            )}
+      <Portal>
+        <Modal
+          visible={commentModalVisible}
+          onDismiss={() => setCommentModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <Surface style={styles.modalContent}>
+            <Text style={styles.modalTitle}>评论</Text>
+            
+            <ScrollView style={styles.commentsContainer}>
+              {selectedPostId && posts.find(p => p.id === selectedPostId)?.comments.map(comment => (
+                <View key={comment.id} style={styles.commentItem}>
+                  <View style={styles.commentHeader}>
+                    <Text style={styles.commentAuthor}>{comment.author}</Text>
+                    <Text style={styles.commentTime}>{comment.timestamp}</Text>
+                  </View>
+                  <Text style={styles.commentContent}>{comment.content}</Text>
+                </View>
+              ))}
+            </ScrollView>
 
-            <View style={styles.postFooter}>
-              <View style={styles.actionButton}>
-                <IconButton
-                  icon="heart-outline"
-                  size={20}
-                  onPress={() => {}}
-                />
-                <Text>{post.likes}</Text>
-              </View>
-              <View style={styles.actionButton}>
-                <IconButton
-                  icon="comment-outline"
-                  size={20}
-                  onPress={() => {}}
-                />
-                <Text>{post.comments.length}</Text>
-              </View>
-              <View style={styles.actionButton}>
-                <IconButton
-                  icon="share-outline"
-                  size={20}
-                  onPress={() => {}}
-                />
-              </View>
+            <View style={styles.commentInputContainer}>
+              <TextInput
+                value={newComment}
+                onChangeText={setNewComment}
+                placeholder="写下你的评论..."
+                style={styles.commentInput}
+                multiline
+              />
+              <Button
+                mode="contained"
+                onPress={handleSubmitComment}
+                disabled={!newComment.trim()}
+                style={styles.submitButton}
+              >
+                发送
+              </Button>
             </View>
           </Surface>
-        ))}
-      </View>
-
-      <Button
-        mode="contained"
-        onPress={() => navigation.navigate('CreatePost', {
-          onPostCreated: handleCreatePost
-        })}
-        style={styles.createPostButton}
-      >
-        发布经验
-      </Button>
-    </ScrollView>
+        </Modal>
+      </Portal>
+    </>
   );
 };
 
@@ -338,6 +437,63 @@ const styles = StyleSheet.create({
   createPostButton: {
     margin: 16,
     marginTop: 0,
+  },
+  likedIcon: {
+    color: '#E6E0FF',
+  },
+  modalContainer: {
+    padding: 20,
+  },
+  modalContent: {
+    padding: 16,
+    borderRadius: 8,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  commentsContainer: {
+    maxHeight: 400,
+    marginBottom: 16,
+  },
+  commentItem: {
+    marginBottom: 16,
+    padding: 8,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  commentAuthor: {
+    fontWeight: 'bold',
+  },
+  commentTime: {
+    fontSize: 12,
+    color: '#666',
+  },
+  commentContent: {
+    color: '#333',
+  },
+  commentInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 16,
+  },
+  commentInput: {
+    flex: 1,
+    marginRight: 8,
+    backgroundColor: '#fff',
+  },
+  submitButton: {
+    marginLeft: 8,
   },
 });
 

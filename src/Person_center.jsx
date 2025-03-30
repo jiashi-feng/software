@@ -84,7 +84,7 @@ const PersonCenter = ({ navigation }) => {
         </View>
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>1280</Text>
+            <Text style={styles.statNumber}>2580</Text>
             <Text style={styles.statLabel}>积分</Text>
           </View>
           <View style={styles.statItem}>
