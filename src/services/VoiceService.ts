@@ -33,43 +33,80 @@ class VoiceServiceClass {
     isInitialized: false,
   };
 
+  // 添加 voice 实例变量
+  private voice: typeof Voice | null = null;
+  
+  // 添加回调属性声明
   private onSpeechResultsCallback: SpeechRecognitionCallback | null = null;
   private onSpeechErrorCallback: SpeechErrorCallback | null = null;
   private onSpeakStartCallback: (() => void) | null = null;
   private onSpeakEndCallback: (() => void) | null = null;
-  
-  /**
-   * 初始化语音服务
-   */
+
   constructor() {
-    this.init().catch(error => {
-      console.error('Failed to initialize voice service:', error);
-    });
+    // 延迟初始化，确保 Voice 模块完全加载
+    setTimeout(() => {
+      this.init().catch(error => {
+        console.error('Failed to initialize voice service:', error);
+      });
+    }, 500);
   }
-  
-  /**
-   * 初始化语音识别和语音合成
-   */
+
   private async init() {
     try {
-      // 检查 Voice 是否存在
-      if (!Voice) {
+      // 检查并初始化 Voice
+      if (!this.voice) {
+        try {
+          this.voice = Voice;
+          console.log('Voice module loaded:', !!this.voice);
+        } catch (err) {
+          console.error('Failed to load Voice module:', err);
+          return false;
+        }
+      }
+
+      if (!this.voice) {
         console.error('Voice module is not available');
-        return;
+        return false;
       }
 
       // 初始化语音识别
-      Voice.onSpeechStart = this.handleSpeechStart;
-      Voice.onSpeechEnd = this.handleSpeechEnd;
-      Voice.onSpeechResults = this.handleSpeechResults;
-      Voice.onSpeechError = this.handleSpeechError;
+      this.voice.onSpeechStart = this.handleSpeechStart;
+      this.voice.onSpeechEnd = this.handleSpeechEnd;
+      this.voice.onSpeechResults = this.handleSpeechResults;
+      this.voice.onSpeechError = this.handleSpeechError;
       
       // 检查权限
       this.state.hasPermission = await this.checkPermission();
       
+      if (!this.state.hasPermission) {
+        console.error('No microphone permission granted');
+        throw new Error('没有麦克风权限');
+      }
+      
       // 初始化TTS
       try {
-        const ttsStatus = await Tts.getInitStatus();
+        // 等待TTS初始化完成
+        await new Promise<void>((resolve, reject) => {
+          const checkTTS = async () => {
+            try {
+              await Tts.getInitStatus();
+              resolve();
+            } catch (err) {
+              console.warn('TTS not ready yet, retrying...');
+              setTimeout(checkTTS, 500);
+            }
+          };
+          
+          // 开始检查
+          checkTTS();
+          
+          // 10秒后超时
+          setTimeout(() => {
+            reject(new Error('TTS初始化超时'));
+          }, 10000);
+        });
+        
+        // 配置TTS
         await Tts.setDefaultLanguage('zh-CN');
         await Tts.setDefaultRate(0.5);
         await Tts.setDefaultPitch(1.0);
@@ -79,29 +116,24 @@ class VoiceServiceClass {
         Tts.addEventListener('tts-finish', this.handleSpeakEnd);
         Tts.addEventListener('tts-error', this.handleSpeakError);
         
-        // 检查TTS引擎是否可用
-        const engines = await Tts.engines();
-        if (engines.length === 0) {
-          console.error('No TTS engines found');
-          return;
-        }
-        
-        // 在Android上，尝试使用Google TTS引擎
-        if (Platform.OS === 'android') {
-          const googleEngine = engines.find(engine => engine.name.toLowerCase().includes('google'));
-          if (googleEngine) {
-            await Tts.setDefaultEngine(googleEngine.name);
-          }
-        }
+        console.log('TTS initialized successfully');
       } catch (err) {
         console.error('TTS initialization failed:', err);
+        throw new Error('语音合成初始化失败');
       }
 
       // 标记初始化完成
       this.state.isInitialized = true;
+      console.log('VoiceService initialized successfully');
+      return true;
     } catch (err) {
       console.error('Voice service initialization failed:', err);
-      this.handleSpeechError({ error: { message: '语音服务初始化失败' } });
+      this.state.isInitialized = false;
+      if (this.onSpeechErrorCallback) {
+        const errorMessage = err instanceof Error ? err.message : '语音服务初始化失败';
+        this.onSpeechErrorCallback(errorMessage);
+      }
+      return false;
     }
   }
 
@@ -237,9 +269,22 @@ class VoiceServiceClass {
   /**
    * 处理语音合成错误
    */
+  // 修改错误处理方法
   private handleSpeakError = (error: any) => {
-    console.error('TTS error:', error);
+    const errorMessage = error?.message || JSON.stringify(error);
+    console.error('TTS error:', errorMessage);
+    
+    // 尝试重新初始化 TTS
     this.state.isSpeaking = false;
+    this.state.isInitialized = false;
+    
+    // 延迟重新初始化
+    setTimeout(() => {
+      this.init().catch(initError => {
+        console.error('Failed to reinitialize TTS:', initError);
+      });
+    }, 1000);
+  
     if (this.onSpeakEndCallback) {
       this.onSpeakEndCallback();
     }
@@ -257,12 +302,12 @@ class VoiceServiceClass {
    */
   public async startListening() {
     try {
+      console.log('Starting speech recognition...');
       // 确保服务已初始化
-      await this.ensureInitialized();
-      
-      // 检查 Voice 对象
-      if (!Voice) {
-        throw new Error('语音识别组件不可用');
+      const isReady = await this.ensureInitialized();
+      if (!isReady || !this.voice) {
+        console.error('Voice service initialization failed');
+        throw new Error('语音服务初始化失败');
       }
       
       // 检查权限
@@ -275,17 +320,27 @@ class VoiceServiceClass {
       
       // 如果已经在监听，先停止
       if (this.state.isListening) {
-        await this.stopListening();
+        try {
+          await this.stopListening();
+          // 短暂等待确保上一次监听完全结束
+          await new Promise(resolve => setTimeout(resolve, 300));
+        } catch (e) {
+          console.warn('Error stopping previous listening session:', e);
+        }
       }
       
       // 开始语音识别
-      await Voice.start('zh-CN');
+      console.log('Calling Voice.start()...');
+      await this.voice.start('zh-CN');
+      this.state.isListening = true;
+      console.log('Voice.start() completed successfully');
     } catch (e) {
       console.error('Start listening error:', e);
       const errorMessage = e instanceof Error ? e.message : '语音识别启动失败';
       if (this.onSpeechErrorCallback) {
         this.onSpeechErrorCallback(errorMessage);
       }
+      throw e;
     }
   }
   
@@ -294,14 +349,13 @@ class VoiceServiceClass {
    */
   public async stopListening() {
     try {
-      // 检查 Voice 对象
-      if (!Voice) {
+      if (!this.voice) {
         throw new Error('语音识别组件不可用');
       }
       
       // 只有正在监听时才停止
       if (this.state.isListening) {
-        await Voice.stop();
+        await this.voice.stop();
       }
     } catch (e) {
       console.error('Stop listening error:', e);
@@ -318,11 +372,11 @@ class VoiceServiceClass {
   public async cancelListening() {
     try {
       // 检查 Voice 对象
-      if (!Voice) {
+      if (!this.voice) {
         throw new Error('语音识别组件不可用');
       }
       
-      await Voice.cancel();
+      await this.voice.cancel();
     } catch (e) {
       console.error('Cancel listening error:', e);
     }
@@ -386,9 +440,10 @@ class VoiceServiceClass {
       }
       
       // 移除所有监听器
-      if (Voice) {
-        await Voice.destroy();
-        Voice.removeAllListeners();
+      if (this.voice) {
+        await this.voice.destroy();
+        this.voice.removeAllListeners();
+        this.voice = null;
       }
       
       Tts.removeAllListeners('tts-start');
@@ -406,4 +461,4 @@ class VoiceServiceClass {
 // 创建单例实例
 export const VoiceService = new VoiceServiceClass();
 
-export default VoiceService; 
+export default VoiceService;

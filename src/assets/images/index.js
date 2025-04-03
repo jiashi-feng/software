@@ -22,7 +22,7 @@ export const CommonImages = {
   headerBg: require('../common/header_bg.jpg'),
   emptyBg: require('../common/empty_bg.png'),
   // 登录页背景
-  background: require('../common/background.jpg'),
+  background: require('../common/background.png'),
   avatars: require('../common/avatar.png'),
   avatarss: require('../common/avatarss.png'),
   a2:require("../common/a2.png"),

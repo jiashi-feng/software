@@ -228,7 +228,7 @@ const LogIn = ({ navigation }) => {
         style={styles.container}
       >
         <View style={styles.logoContainer}>
-          <Icon name="home-heart" size={100} color={theme.colors.primary} />
+
           <Text style={styles.title}>家庭任务智能管理系统</Text>
         </View>
 
@@ -286,13 +286,13 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 240,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     marginTop: 15,
-    color: '#fff',
+    color: '#249',
   },
   buttonsContainer: {
     gap: 20,
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     marginVertical: 10,
-    color: '#fff',
+    color: '#123',
     fontSize: 14,
   },
   socialButtons: {

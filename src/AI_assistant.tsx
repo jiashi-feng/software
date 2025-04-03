@@ -144,12 +144,46 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
   // 开始语音识别
   const startListening = async () => {
     try {
+      // 先设置状态，给用户视觉反馈
       setIsListening(true);
+      
+      // 添加一个短暂延迟，确保界面状态更新
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // 检查 VoiceService 是否已初始化
+      if (!VoiceService.getState().isInitialized) {
+        console.log('语音服务尚未初始化，等待初始化...');
+        // 尝试重新初始化
+        try {
+          // 尝试等待初始化完成
+          await new Promise<void>((resolve, reject) => {
+            const checkInterval = setInterval(() => {
+              if (VoiceService.getState().isInitialized) {
+                clearInterval(checkInterval);
+                clearTimeout(timeoutId);
+                resolve();
+              }
+            }, 500);
+            
+            const timeoutId = setTimeout(() => {
+              clearInterval(checkInterval);
+              reject(new Error('语音服务初始化超时'));
+            }, 5000);
+          });
+        } catch (initError) {
+          throw new Error('语音服务尚未初始化');
+        }
+      }
+      
+      // 进行语音识别
       await VoiceService.startListening();
     } catch (error) {
       console.error('开始语音识别失败:', error);
+      // 出错时重置状态
       setIsListening(false);
-      // 可以在这里显示错误提示
+      // 显示错误提示
+      const errorMsg = error instanceof Error ? error.message : '语音识别启动失败';
+      handleSpeechError(errorMsg);
     }
   };
   
