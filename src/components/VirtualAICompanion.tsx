@@ -18,9 +18,8 @@ import Animated, {
   Easing,
   withSpring,
 } from 'react-native-reanimated';
-import Voice, { SpeechResultsEvent } from '@react-native-voice/voice';
-import Tts from 'react-native-tts';
 import { useVirtualAICompanion } from './VirtualAICompanionProvider';
+import { ServerVoiceService } from '../services/ServerVoiceService';
 
 // 获取屏幕尺寸
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -78,34 +77,13 @@ const VirtualAICompanion: React.FC<VirtualAICompanionProps> = ({
   const scale = useSharedValue(1);
   const opacity = useSharedValue(0.8);
   
-  // 初始化语音识别和语音合成
-  useEffect(() => {
-    // 初始化语音识别
-    Voice.onSpeechStart = () => setIsListening(true);
-    Voice.onSpeechEnd = () => setIsListening(false);
-    Voice.onSpeechResults = onSpeechResults;
-    
-    // 初始化TTS
-    Tts.setDefaultLanguage('zh-CN');
-    Tts.addEventListener('tts-finish', () => console.log('TTS完成'));
-    
-    // 清理函数
-    return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
-      Tts.removeAllListeners('tts-finish');
-    };
-  }, []);
-  
   // 处理语音识别结果
-  const onSpeechResults = (e: SpeechResultsEvent) => {
-    if (e.value && e.value.length > 0) {
-      const recognizedText = e.value[0];
-      setSpeechText(recognizedText);
-      
-      // 在这里可以处理语音命令，例如导航到AI对话界面
-      if (recognizedText.includes('助手') || recognizedText.includes('对话')) {
-        navigateToAIAssistant();
-      }
+  const handleSpeechResult = (recognizedText: string) => {
+    setSpeechText(recognizedText);
+    
+    // 在这里可以处理语音命令，例如导航到AI对话界面
+    if (recognizedText.includes('助手') || recognizedText.includes('对话')) {
+      navigateToAIAssistant();
     }
   };
   
@@ -137,24 +115,30 @@ const VirtualAICompanion: React.FC<VirtualAICompanionProps> = ({
     if (!hasPermission) return;
     
     try {
-      await Voice.start('zh-CN');
+      setIsListening(true);
+      await ServerVoiceService.startRecording();
     } catch (e) {
-      console.error(e);
+      console.error('开始语音识别失败:', e);
+      setIsListening(false);
     }
   };
   
   // 停止语音识别
   const stopListening = async () => {
     try {
-      await Voice.stop();
+      setIsListening(false);
+      const recognizedText = await ServerVoiceService.stopRecording();
+      if (recognizedText) {
+        handleSpeechResult(recognizedText);
+      }
     } catch (e) {
-      console.error(e);
+      console.error('停止语音识别失败:', e);
     }
   };
   
-  // 使用TTS播放文本
+  // 使用服务端TTS播放文本
   const speak = (text: string) => {
-    Tts.speak(text);
+    ServerVoiceService.speak(text);
   };
   
   // 导航到AI助手界面

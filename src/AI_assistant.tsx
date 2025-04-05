@@ -19,7 +19,7 @@ import {
   Chip,
 } from 'react-native-paper';
 import CustomIcon from './components/CustomIcon';
-import { VoiceService } from './services/VoiceService';
+import { ServerVoiceService } from './services/ServerVoiceService';
 import { TaskService } from './services/TaskService';
 import { Task } from './types/Task';
 import { RouteProp } from '@react-navigation/native';
@@ -70,19 +70,6 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
   
   // 初始化
   useEffect(() => {
-    // 初始化 VoiceService
-    const setupVoice = async () => {
-      try {
-        // 设置语音服务回调
-        VoiceService.setOnSpeechResults(handleSpeechResults);
-        VoiceService.setOnSpeechError(handleSpeechError);
-        VoiceService.setOnSpeakStart(() => setIsSpeaking(true));
-        VoiceService.setOnSpeakEnd(() => setIsSpeaking(false));
-      } catch (error) {
-        console.error('设置语音服务失败:', error);
-      }
-    };
-
     // 初始欢迎消息
     const welcomeMessage: Message = {
       id: Date.now().toString(),
@@ -106,20 +93,10 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
       console.error('获取任务列表失败:', error);
     }
     
-    // 设置语音服务
-    setupVoice();
-    
     // 如果有初始语音文本，则处理它
     if (initialSpeechText) {
       handleSendMessage(initialSpeechText);
     }
-    
-    // 清理函数
-    return () => {
-      VoiceService.destroy().catch(error => {
-        console.error('清理语音服务失败:', error);
-      });
-    };
   }, []);
   
   // 滚动到底部
@@ -129,61 +106,18 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
     }, 100);
   }, [messages]);
   
-  // 处理语音识别结果
-  const handleSpeechResults = (recognizedText: string) => {
-    setInputText(recognizedText);
-  };
-  
-  // 处理语音识别错误
-  const handleSpeechError = (error: string) => {
-    console.error('语音识别错误:', error);
-    setIsListening(false);
-    // 可以在这里显示错误提示给用户
-  };
-  
   // 开始语音识别
   const startListening = async () => {
     try {
       // 先设置状态，给用户视觉反馈
       setIsListening(true);
       
-      // 添加一个短暂延迟，确保界面状态更新
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // 检查 VoiceService 是否已初始化
-      if (!VoiceService.getState().isInitialized) {
-        console.log('语音服务尚未初始化，等待初始化...');
-        // 尝试重新初始化
-        try {
-          // 尝试等待初始化完成
-          await new Promise<void>((resolve, reject) => {
-            const checkInterval = setInterval(() => {
-              if (VoiceService.getState().isInitialized) {
-                clearInterval(checkInterval);
-                clearTimeout(timeoutId);
-                resolve();
-              }
-            }, 500);
-            
-            const timeoutId = setTimeout(() => {
-              clearInterval(checkInterval);
-              reject(new Error('语音服务初始化超时'));
-            }, 5000);
-          });
-        } catch (initError) {
-          throw new Error('语音服务尚未初始化');
-        }
-      }
-      
-      // 进行语音识别
-      await VoiceService.startListening();
+      // 开始录音
+      await ServerVoiceService.startRecording();
     } catch (error) {
       console.error('开始语音识别失败:', error);
-      // 出错时重置状态
       setIsListening(false);
-      // 显示错误提示
-      const errorMsg = error instanceof Error ? error.message : '语音识别启动失败';
-      handleSpeechError(errorMsg);
+      // 错误已在 ServerVoiceService 中处理，这里不需要再做额外处理
     }
   };
   
@@ -191,14 +125,21 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
   const stopListening = async () => {
     try {
       setIsListening(false);
-      await VoiceService.stopListening();
       
-      // 如果有输入文本，自动发送
-      if (inputText.trim()) {
-        handleSendMessage(inputText);
+      // 停止录音并获取识别结果
+      const recognizedText = await ServerVoiceService.stopRecording();
+      
+      // 如果有识别结果，自动发送
+      if (recognizedText) {
+        setInputText(recognizedText);
+        handleSendMessage(recognizedText);
       }
     } catch (error) {
       console.error('停止语音识别失败:', error);
+      // 错误已在 ServerVoiceService 中处理，这里不需要再做额外处理
+    } finally {
+      // 确保状态被重置
+      setIsListening(false);
     }
   };
   
@@ -291,8 +232,23 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
     // 更新消息列表
     setMessages(prevMessages => [...prevMessages, aiMessage]);
     
-    // 播放AI回复
-    VoiceService.speak(aiResponse);
+    // 设置正在说话状态
+    setIsSpeaking(true);
+    
+    try {
+      // 使用服务端语音合成播放AI回复
+      await ServerVoiceService.speak(aiResponse, {
+        voice: 'xiaoyun',
+        speed: 0,
+        volume: 50,
+        pitch: 0,
+      });
+    } catch (error) {
+      console.error('语音合成失败:', error);
+    } finally {
+      // 无论如何都要重置状态
+      setIsSpeaking(false);
+    }
   };
   
   // 渲染输入栏

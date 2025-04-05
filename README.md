@@ -94,7 +94,7 @@ npm run ios
 
 应用特色界面展示：
 
-| 登录页面 | 主页 | 任务详情 | 设置页面 |
+| 登录页面 | 主页 | 任务详情 |
 |:---:|:---:|:---:|:---:|
 | ![登录页面](./screenshots/login.png) | ![主页](./screenshots/home.png) | ![社区服务](./screenshots/commnuity.png) |
 
