@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -78,6 +78,26 @@ const GroupChat = ({ navigation }) => {
   const [showMembers, setShowMembers] = useState(false);
   const theme = useTheme();
 
+  // 使用 useLayoutEffect 设置导航栏右侧按钮
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ flexDirection: 'row' }}>
+          <IconButton
+            icon="clipboard-list"
+            size={24}
+            onPress={handleNavigateToTaskDetail}
+          />
+          <IconButton
+            icon="account-group"
+            size={24}
+            onPress={() => setShowMembers(!showMembers)}
+          />
+        </View>
+      ),
+    });
+  }, [navigation, showMembers]);
+
   const handleSend = () => {
     if (!message.trim()) return;
 
@@ -97,35 +117,17 @@ const GroupChat = ({ navigation }) => {
     setMessage('');
   };
 
+  const handleNavigateToTaskDetail = () => {
+    console.log('跳转到家庭任务详情');
+    navigation.navigate('FamilyTaskDetail');
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <Surface style={styles.header}>
-        <View style={styles.headerContent}>
-          <IconButton
-            icon="arrow-left"
-            size={24}
-            onPress={() => navigation.goBack()}
-          />
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>家庭群聊</Text>
-            <Text style={styles.headerSubtitle}>3 位成员</Text>
-          </View>
-          <IconButton
-            icon="clipboard-list"
-            size={24}
-            onPress={() => navigation.navigate('FamilyTaskDetail')}
-            style={styles.taskIcon}
-          />
-          <IconButton
-            icon="account-group"
-            size={24}
-            onPress={() => setShowMembers(!showMembers)}
-          />
-        </View>
-      </Surface>
+      {/* 移除自定义头部 */}
 
       {showMembers && (
         <Surface style={styles.membersList}>
@@ -145,6 +147,7 @@ const GroupChat = ({ navigation }) => {
       )}
 
       <ScrollView style={styles.messagesContainer}>
+        {/* 消息列表部分保持不变 */}
         {mockMessages.map(msg => (
           <View
             key={msg.id}
@@ -209,30 +212,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    padding: 8,
-    elevation: 4,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerText: {
-    flex: 1,
-    marginLeft: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
+  // 移除 header 相关样式
   membersList: {
     padding: 16,
     elevation: 2,
+    marginHorizontal: 8,
+    marginTop: 8,
   },
+  // 其他样式保持不变
   memberItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -311,6 +298,13 @@ const styles = StyleSheet.create({
   },
   taskIcon: {
     marginLeft: 8,
+  },
+  iconButton: {
+    margin: 0,
+    width: 60,
+    height: 55,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

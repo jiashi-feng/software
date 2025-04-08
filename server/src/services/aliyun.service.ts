@@ -18,7 +18,14 @@ class AliyunService {
   private accessKeySecret: string;
   private appKey: string;
   private tokenUrl: string = 'https://nls-meta.cn-shanghai.aliyuncs.com/pop/2019-02-28/token';
-  private ttsUrl: string = 'https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/tts';
+  
+  // 更新为最新的TTS URLs
+  private ttsServiceURLs = {
+    shanghai: 'https://nls-gateway-cn-shanghai.aliyuncs.com/rest/v1/tts', // 上海服务区域
+    beijing: 'https://nls-gateway-cn-beijing.aliyuncs.com/rest/v1/tts', // 北京服务区域
+    shenzhen: 'https://nls-gateway-cn-shenzhen.aliyuncs.com/rest/v1/tts', // 深圳服务区域
+  };
+  
   private token: string | null = null;
   private tokenExpireTime: number = 0;
 
@@ -77,6 +84,21 @@ class AliyunService {
   }
 
   /**
+   * 获取当前配置的TTS服务URL
+   * @returns TTS服务URL
+   */
+  private getTTSServiceURL(region?: string): string {
+    const configRegion = region || process.env.ALIYUN_SERVICE_REGION || 'shanghai';
+    
+    if (configRegion in this.ttsServiceURLs) {
+      return this.ttsServiceURLs[configRegion as keyof typeof this.ttsServiceURLs];
+    }
+    
+    // 默认使用上海区域
+    return this.ttsServiceURLs.shanghai;
+  }
+
+  /**
    * 文本转语音
    * @param text 要转换的文本
    * @param options 合成选项
@@ -88,6 +110,7 @@ class AliyunService {
     volume?: number;
     speed?: number;
     pitch?: number;
+    region?: string;
   }): Promise<Buffer> {
     try {
       console.log('准备获取阿里云访问令牌...');
@@ -109,7 +132,10 @@ class AliyunService {
       const mergedOptions = { ...defaultOptions, ...options };
       console.log('语音合成参数:', JSON.stringify(mergedOptions));
 
-      console.log('准备调用阿里云TTS API...');
+      // 获取TTS服务URL
+      const ttsUrl = this.getTTSServiceURL(options?.region);
+      console.log('准备调用阿里云TTS API:', ttsUrl);
+      
       // 构建请求参数
       const params = new URLSearchParams();
       params.append('appkey', this.appKey);
@@ -123,8 +149,8 @@ class AliyunService {
       params.append('pitch_rate', mergedOptions.pitch.toString());
 
       // 发送请求并获取音频数据
-      console.log('发送请求到阿里云TTS服务:', this.ttsUrl);
-      const response = await axios.post(this.ttsUrl, params, {
+      console.log('发送请求到阿里云TTS服务...');
+      const response = await axios.post(ttsUrl, params, {
         responseType: 'arraybuffer',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'

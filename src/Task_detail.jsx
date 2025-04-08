@@ -110,20 +110,6 @@ const TaskDetail = ({ navigation }) => {
       colors={['#E6E6FA', '#D8BFD8']}
       style={styles.container}
     >
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButtonContainer}
-          onPress={() => navigation.goBack()}
-        >
-          <IconButton
-            icon="arrow-left"
-            size={24}
-            color="#6C5CE7"
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>任务详情</Text>
-        <View style={styles.backButtonContainer} />
-      </View>
 
       <ScrollView style={styles.content}>
         <Surface style={styles.taskBox}>
@@ -199,24 +185,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  header: {
-    flexDirection: 'row',
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#6C5CE7',
-    flex: 1,
-    textAlign: 'center',
-  },
-  backButtonContainer: {
-    width: 40,
-    alignItems: 'center',
   },
   content: {
     flex: 1,
@@ -318,4 +286,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TaskDetail; 
+export default TaskDetail;

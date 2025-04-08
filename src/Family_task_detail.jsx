@@ -110,20 +110,6 @@ const FamilyTaskDetail = ({ navigation }) => {
       colors={['#E6E6FA', '#D8BFD8']}
       style={styles.container}
     >
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButtonContainer}
-          onPress={() => navigation.goBack()}
-        >
-          <IconButton
-            icon="arrow-left"
-            size={24}
-            color="#6C5CE7"
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>家庭任务</Text>
-        <View style={styles.backButtonContainer} />
-      </View>
 
       <ScrollView style={styles.content}>
         <Surface style={styles.taskBox}>
@@ -226,26 +212,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    flexDirection: 'row',
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#6C5CE7',
-    flex: 1,
-    textAlign: 'center',
-  },
-  backButtonContainer: {
-    width: 40,
-    alignItems: 'center',
-  },
   content: {
+    marginTop: 20,
     flex: 1,
     paddingHorizontal: 16,
   },

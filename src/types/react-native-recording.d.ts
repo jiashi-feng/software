@@ -10,7 +10,7 @@ declare module 'react-native-recording' {
   interface Recording {
     init(config: RecordingConfig): Promise<void>;
     start(): Promise<void>;
-    stop(): Promise<void>;
+    stop(): Promise<string>;
     play(filePath: string): Promise<void>;
   }
 

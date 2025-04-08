@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   SafeAreaView,
+  ToastAndroid,
 } from 'react-native';
 import {
   Text,
@@ -19,7 +20,7 @@ import {
   Chip,
 } from 'react-native-paper';
 import CustomIcon from './components/CustomIcon';
-import { ServerVoiceService } from './services/ServerVoiceService';
+import { MixedVoiceService } from './services/MixedVoiceService';
 import { TaskService } from './services/TaskService';
 import { Task } from './types/Task';
 import { RouteProp } from '@react-navigation/native';
@@ -108,37 +109,70 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
   
   // 开始语音识别
   const startListening = async () => {
+    if (isListening) return;
+    
     try {
-      // 先设置状态，给用户视觉反馈
       setIsListening(true);
+      console.log('开始语音识别...');
       
-      // 开始录音
-      await ServerVoiceService.startRecording();
+      // 等待UI更新后再执行
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // 在一个全局try-catch块中包装所有可能导致崩溃的代码
+      try {
+        // 开始录音
+        await MixedVoiceService.startRecording();
+      } catch (recordingError) {
+        console.error('录音过程中发生严重错误:', recordingError);
+        // 不要让应用崩溃，只是显示错误并重置状态
+        setIsListening(false);
+        
+        // 显示友好的错误信息
+        if (Platform.OS === 'android') {
+          ToastAndroid.show('语音输入功能暂时不可用，请稍后再试', ToastAndroid.LONG);
+        }
+        return;
+      }
+      
     } catch (error) {
-      console.error('开始语音识别失败:', error);
+      // 捕获所有其他错误
+      console.error('开始语音输入时发生未知错误:', error);
       setIsListening(false);
-      // 错误已在 ServerVoiceService 中处理，这里不需要再做额外处理
     }
   };
   
   // 停止语音识别
   const stopListening = async () => {
+    if (!isListening) return;
+    
     try {
-      setIsListening(false);
+      console.log('停止语音识别...');
       
-      // 停止录音并获取识别结果
-      const recognizedText = await ServerVoiceService.stopRecording();
-      
-      // 如果有识别结果，自动发送
-      if (recognizedText) {
-        setInputText(recognizedText);
-        handleSendMessage(recognizedText);
+      // 在全局try-catch块中包装所有代码
+      try {
+        // 停止录音并获取识别结果
+        const recognizedText = await MixedVoiceService.stopRecording();
+        
+        if (recognizedText) {
+          setInputText(recognizedText);
+          handleSendMessage(recognizedText);
+        } else {
+          console.log('没有识别到文本');
+          if (Platform.OS === 'android') {
+            ToastAndroid.show('没有识别到语音，请重试', ToastAndroid.SHORT);
+          }
+        }
+      } catch (recordingError) {
+        console.error('停止录音过程中发生严重错误:', recordingError);
+        // 只显示错误，不让应用崩溃
+        if (Platform.OS === 'android') {
+          ToastAndroid.show('语音识别功能暂时不可用，请稍后再试', ToastAndroid.LONG);
+        }
       }
     } catch (error) {
-      console.error('停止语音识别失败:', error);
-      // 错误已在 ServerVoiceService 中处理，这里不需要再做额外处理
+      console.error('停止语音输入时发生未知错误:', error);
     } finally {
-      // 确保状态被重置
+      // 确保无论如何都重置状态
       setIsListening(false);
     }
   };
@@ -237,11 +271,12 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
     
     try {
       // 使用服务端语音合成播放AI回复
-      await ServerVoiceService.speak(aiResponse, {
-        voice: 'xiaoyun',
+      await MixedVoiceService.speak(aiResponse, {
+        voice: 'xiaoyan',
         speed: 0,
-        volume: 50,
-        pitch: 0,
+        volume: 80,
+        pitch: 5,
+        region: 'shanghai'
       });
     } catch (error) {
       console.error('语音合成失败:', error);

@@ -25,6 +25,7 @@ export const CommonImages = {
   background: require('../common/background.png'),
   avatars: require('../common/avatar.png'),
   avatarss: require('../common/avatarss.png'),
+  unlogin:require("../common/unlogin.png"),
   a2:require("../common/a2.png"),
   a3:require("../common/a3.png"),
   a4:require("../common/a4.png"),

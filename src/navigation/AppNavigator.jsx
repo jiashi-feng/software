@@ -174,7 +174,7 @@ const AppNavigator = () => {
       onStateChange={handleNavigationStateChange}
     >
       <Stack.Navigator 
-        initialRouteName="LogIn"
+        initialRouteName="MainTabs"
         screenOptions={{
           headerStyle: {
             backgroundColor: '#fff',
@@ -213,8 +213,9 @@ const AppNavigator = () => {
         <Stack.Screen 
           name="GroupChat" 
           component={GroupChat}
-          options={{ title: '群聊' ,
-            headerShown: false,
+          options={{ 
+            title: '家庭群聊',
+            headerBackTitle: '返回',
           }}
         />
         <Stack.Screen 
@@ -222,7 +223,7 @@ const AppNavigator = () => {
           component={FamilyTaskDetail}
           options={{ 
             title: '家庭任务',
-            headerShown: false,
+            headerBackTitle: '返回',
           }}
         />
         <Stack.Screen 
@@ -238,10 +239,10 @@ const AppNavigator = () => {
         <Stack.Screen 
           name="TaskDetail" 
           component={TaskDetail}
-          options={{ title: '任务详情' ,
-            headerShown: false, 
+          options={{ 
+            title: '任务详情',
+            headerBackTitle: '返回',
           }}
-          
         />
         <Stack.Screen 
           name="CreateTask" 
@@ -316,14 +317,16 @@ const AppNavigator = () => {
           name="JoinFamily" 
           component={JoinFamily}
           options={{ 
-            headerShown: false,  // 因为JoinFamily组件内已经有自己的header
+            title: '加入家庭',
+            headerBackTitle: '返回',
           }}
         />
         <Stack.Screen 
           name="CreateFamily" 
           component={CreateFamily}
           options={{ 
-            headerShown: false,  // 如果CreateFamily组件也有自己的header
+            title: '创建家庭',
+            headerBackTitle: '返回',
           }}
         />
       </Stack.Navigator>
@@ -331,4 +334,4 @@ const AppNavigator = () => {
   );
 };
 
-export default AppNavigator; 
+export default AppNavigator;

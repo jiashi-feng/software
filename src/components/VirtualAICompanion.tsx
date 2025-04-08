@@ -19,7 +19,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useVirtualAICompanion } from './VirtualAICompanionProvider';
-import { ServerVoiceService } from '../services/ServerVoiceService';
+import { MixedVoiceService } from '../services/MixedVoiceService';
 
 // 获取屏幕尺寸
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -109,36 +109,64 @@ const VirtualAICompanion: React.FC<VirtualAICompanionProps> = ({
     return true;
   };
   
-  // 开始语音识别
+  /**
+   * 开始语音输入
+   */
   const startListening = async () => {
-    const hasPermission = await requestMicrophonePermission();
-    if (!hasPermission) return;
+    if (isListening) return;
+    
+    setIsListening(true);
+    try {
+      // 等待UI更新后再执行
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // 开始录音
+      await MixedVoiceService.startRecording();
+    } catch (error) {
+      console.error('开始语音输入错误:', error);
+      setIsListening(false);
+    }
+  };
+  
+  /**
+   * 停止语音输入并识别
+   */
+  const stopListening = async () => {
+    if (!isListening) return;
     
     try {
-      setIsListening(true);
-      await ServerVoiceService.startRecording();
-    } catch (e) {
-      console.error('开始语音识别失败:', e);
-      setIsListening(false);
-    }
-  };
-  
-  // 停止语音识别
-  const stopListening = async () => {
-    try {
-      setIsListening(false);
-      const recognizedText = await ServerVoiceService.stopRecording();
+      // 停止录音并获取识别结果
+      const recognizedText = await MixedVoiceService.stopRecording();
+      
       if (recognizedText) {
+        setSpeechText(recognizedText);
         handleSpeechResult(recognizedText);
       }
-    } catch (e) {
-      console.error('停止语音识别失败:', e);
+    } catch (error) {
+      console.error('停止语音输入错误:', error);
+    } finally {
+      setIsListening(false);
     }
   };
   
-  // 使用服务端TTS播放文本
-  const speak = (text: string) => {
-    ServerVoiceService.speak(text);
+  /**
+   * 处理AI响应
+   * @param text 响应文本
+   */
+  const speakResponse = async (text: string) => {
+    if (text && text.trim()) {
+      try {
+        await MixedVoiceService.speak(text, {
+          voice: 'xiaoyan',
+          speed: 0,
+          volume: 80,
+          pitch: 5,
+          region: 'shanghai'
+        });
+      } catch (error) {
+        console.error('语音合成错误:', error);
+      }
+    }
   };
   
   // 导航到AI助手界面
@@ -271,6 +299,15 @@ const VirtualAICompanion: React.FC<VirtualAICompanionProps> = ({
       opacity: opacity.value,
     };
   });
+  
+  // 在对话结束时朗读回复
+  const handleConversationEnd = async (result: { text?: string }) => {
+    console.log('对话结束，结果:', result);
+    setIsExpanded(false);
+    if (result.text) {
+      speakResponse(result.text);
+    }
+  };
   
   return (
     <Animated.View

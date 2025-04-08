@@ -14,7 +14,7 @@ class TTSController {
     try {
       console.log('收到语音合成请求:', JSON.stringify(req.body));
       
-      const { text, options } = req.body;
+      const { text, options = {} } = req.body;
 
       // 验证文本参数
       if (!text || typeof text !== 'string') {
@@ -31,6 +31,17 @@ class TTSController {
           message: '文本长度超过限制（最大300个字符）' 
         });
         return;
+      }
+      
+      // 验证区域参数
+      if (options.region && typeof options.region === 'string') {
+        const validRegions = ['shanghai', 'beijing', 'shenzhen'];
+        if (!validRegions.includes(options.region)) {
+          console.log('无效的区域参数:', options.region);
+          // 使用默认区域，而不是返回错误
+          options.region = process.env.ALIYUN_SERVICE_REGION || 'shanghai';
+          console.log('使用默认区域:', options.region);
+        }
       }
 
       console.log('开始调用阿里云服务进行语音合成...');

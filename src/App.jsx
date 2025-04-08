@@ -6,6 +6,7 @@ import AppNavigator from './navigation/AppNavigator';
 import VirtualAICompanionProvider from './components/VirtualAICompanionProvider';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
+import { AuthProvider } from './store/AuthContext';
 
 // 定义应用的默认主题
 const theme = {
@@ -22,9 +23,11 @@ const App = () => {
     <GestureHandlerRootView style={styles.container}>
       <StoreProvider store={store}>
         <PaperProvider theme={theme}>
-          <VirtualAICompanionProvider>
-            <AppNavigator />
-          </VirtualAICompanionProvider>
+          <AuthProvider>
+            <VirtualAICompanionProvider>
+              <AppNavigator />
+            </VirtualAICompanionProvider>
+          </AuthProvider>
         </PaperProvider>
       </StoreProvider>
     </GestureHandlerRootView>

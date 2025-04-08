@@ -49,11 +49,6 @@ const JoinFamily = ({ navigation }) => {
     // TODO: 实现申请入驻的API调用
   };
 
-  const handleGoBack = () => {
-    // 导航到主页面的MainTabs
-    navigation.navigate('MainTabs');
-  };
-
   const renderFamilyItem = ({ item }) => (
     <View style={styles.familyItem}>
       <Image source={item.avatar} style={styles.familyAvatar} />
@@ -76,21 +71,6 @@ const JoinFamily = ({ navigation }) => {
       colors={['#E6E6FA', '#D8BFD8']}
       style={styles.container}
     >
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButtonContainer}
-          onPress={handleGoBack}
-          activeOpacity={0.7}
-        >
-          <IconButton
-            icon="arrow-left"
-            size={24}
-            onPress={undefined}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>入驻家庭</Text>
-      </View>
-
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -113,16 +93,6 @@ const JoinFamily = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 16,
   },
   searchContainer: {
     padding: 16,

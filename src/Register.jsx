@@ -19,9 +19,12 @@ import {
   Divider,
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useAuth } from './store/AuthContext';
+import { CommonImages } from './assets/images';
 
 const Register = ({ navigation }) => {
   const theme = useTheme();
+  const { login } = useAuth();
   const [step, setStep] = useState(1); // 1: 输入联系方式, 2: 验证码验证, 3: 设置账号密码
   const [contactType, setContactType] = useState('phone'); // 'phone' 或 'email'
   const [contact, setContact] = useState('');
@@ -149,15 +152,20 @@ const Register = ({ navigation }) => {
   };
 
   // 完成注册
-  const completeRegistration = () => {
+  const completeRegistration = async () => {
     if (validateUsername() && validatePassword() && validateConfirmPassword()) {
-      // 实际应用中这里应该调用API完成注册
-      console.log('注册成功', {
-        contactType,
-        contact,
-        username,
-        password,
-      });
+      // 创建用户信息对象
+      const userInfo = {
+        name: username,
+        level: '新手 Lv.1',
+        avatar: CommonImages.avatar,
+        points: '0',
+        achievements: '0',
+        completionRate: '0%'
+      };
+
+      // 调用登录方法
+      await login(userInfo);
       
       // 注册成功后导航到用户偏好选择页面
       navigation.navigate('AbilityChoice');
@@ -165,10 +173,21 @@ const Register = ({ navigation }) => {
   };
 
   // 第三方注册
-  const handleThirdPartyRegister = (platform) => {
-    // 实际应用中这里应该调用相应的第三方登录API
-    console.log(`使用${platform}注册`);
-    // 假设第三方注册成功，导航到用户偏好选择页面
+  const handleThirdPartyRegister = async (platform) => {
+    // 创建第三方用户信息
+    const userInfo = {
+      name: `${platform}用户`,
+      level: '新手 Lv.1',
+      avatar: CommonImages.avatar,
+      points: '0',
+      achievements: '0',
+      completionRate: '0%'
+    };
+
+    // 调用登录方法
+    await login(userInfo);
+    
+    // 导航到用户偏好选择页面
     navigation.navigate('AbilityChoice');
   };
 
@@ -307,6 +326,7 @@ const Register = ({ navigation }) => {
         mode="contained"
         onPress={verifyCode}
         style={styles.button}
+        disabled={!verificationCode || verificationCode.length !== 6}
       >
         下一步
       </Button>
@@ -327,7 +347,6 @@ const Register = ({ navigation }) => {
         }}
         mode="outlined"
         style={styles.input}
-        autoCapitalize="none"
         error={!!usernameError}
       />
       {!!usernameError && (
@@ -343,8 +362,8 @@ const Register = ({ navigation }) => {
         }}
         mode="outlined"
         style={styles.input}
-        secureTextEntry={secureTextEntry}
         error={!!passwordError}
+        secureTextEntry={secureTextEntry}
         right={
           <TextInput.Icon
             icon={secureTextEntry ? 'eye-off' : 'eye'}
@@ -365,8 +384,14 @@ const Register = ({ navigation }) => {
         }}
         mode="outlined"
         style={styles.input}
-        secureTextEntry={secureTextEntry}
         error={!!confirmPasswordError}
+        secureTextEntry={secureTextEntry}
+        right={
+          <TextInput.Icon
+            icon={secureTextEntry ? 'eye-off' : 'eye'}
+            onPress={() => setSecureTextEntry(!secureTextEntry)}
+          />
+        }
       />
       {!!confirmPasswordError && (
         <HelperText type="error">{confirmPasswordError}</HelperText>
@@ -382,112 +407,97 @@ const Register = ({ navigation }) => {
     </View>
   );
 
+  // 渲染步骤
+  const renderStep = () => {
+    switch (step) {
+      case 1:
+        return renderStep1();
+      case 2:
+        return renderStep2();
+      case 3:
+        return renderStep3();
+      default:
+        return null;
+    }
+  };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      backgroundColor: theme.colors.primary,
+    },
+    stepContainer: {
+      padding: 20,
+    },
+    stepTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginBottom: 20,
+    },
+    input: {
+      marginBottom: 20,
+    },
+    button: {
+      marginTop: 20,
+    },
+    thirdPartyContainer: {
+      marginTop: 20,
+    },
+    divider: {
+      marginBottom: 10,
+    },
+    dividerText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginBottom: 10,
+    },
+    socialButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    socialButton: {
+      padding: 10,
+    },
+    codeInputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    codeInput: {
+      flex: 1,
+    },
+    sendButton: {
+      marginLeft: 10,
+    },
+    toggleButton: {
+      marginBottom: 20,
+    },
+    infoText: {
+      marginBottom: 20,
+    },
+    radioContainer: {
+      flexDirection: 'row',
+      justifyContent: 'flex-start',
+      marginVertical: 10,
+    },
+    radioItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginRight: 20,
+    },
+  });
+
   return (
     <View style={styles.container}>
       {renderHeader()}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <Surface style={styles.surface}>
-            {step === 1 && renderStep1()}
-            {step === 2 && renderStep2()}
-            {step === 3 && renderStep3()}
-          </Surface>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      <ScrollView>
+        {renderStep()}
+      </ScrollView>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  keyboardAvoid: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: 20,
-  },
-  surface: {
-    padding: 20,
-    borderRadius: 10,
-    elevation: 4,
-  },
-  stepContainer: {
-    gap: 15,
-  },
-  stepTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  input: {
-    backgroundColor: 'transparent',
-  },
-  button: {
-    marginTop: 10,
-    paddingVertical: 8,
-  },
-  radioContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginVertical: 10,
-  },
-  radioItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 20,
-  },
-  codeInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  codeInput: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  sendButton: {
-    marginLeft: 10,
-    height: 56,
-    justifyContent: 'center',
-  },
-  infoText: {
-    marginVertical: 10,
-    color: '#666',
-  },
-  thirdPartyContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  divider: {
-    width: '100%',
-    marginVertical: 10,
-  },
-  dividerText: {
-    marginTop: 5,
-    marginBottom: 10,
-    color: '#666',
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 10,
-    elevation: 2,
-  },
-});
-
-export default Register; 
+export default Register;

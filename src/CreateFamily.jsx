@@ -36,30 +36,12 @@ const CreateFamily = ({ navigation }) => {
     navigation.navigate('MainTabs');
   };
 
-  const handleGoBack = () => {
-    // 导航到主页面的MainTabs
-    navigation.navigate('MainTabs');
-  };
 
   return (
     <LinearGradient
       colors={['#E6E6FA', '#D8BFD8']}
       style={styles.container}
     >
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButtonContainer}
-          onPress={handleGoBack}
-          activeOpacity={0.7}
-        >
-          <IconButton
-            icon="arrow-left"
-            size={24}
-            onPress={undefined}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>创建家庭</Text>
-      </View>
 
       <View style={styles.content}>
         <TouchableOpacity
@@ -104,16 +86,6 @@ const CreateFamily = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 16,
   },
   content: {
     padding: 20,
