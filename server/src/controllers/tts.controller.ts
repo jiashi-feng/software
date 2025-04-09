@@ -1,69 +1,84 @@
 import { Request, Response } from 'express';
 import aliyunService from '../services/aliyun.service';
+import aliyunTTSService, { TTSOptions } from '../services/aliyun-tts.service';
 
 /**
- * 文本转语音控制器
+ * TTS控制器类
+ * 处理语音合成相关的请求
  */
 class TTSController {
   /**
-   * 将文本转换为语音
-   * @param req 请求对象
+   * 合成语音
+   * @param req 请求对象，包含要合成的文本和选项
    * @param res 响应对象
    */
-  public async textToSpeech(req: Request, res: Response): Promise<void> {
+  public async synthesize(req: Request, res: Response): Promise<void> {
     try {
-      console.log('收到语音合成请求:', JSON.stringify(req.body));
+      console.log('收到语音合成请求');
       
-      const { text, options = {} } = req.body;
-
-      // 验证文本参数
-      if (!text || typeof text !== 'string') {
-        console.log('无效的文本参数:', text);
-        res.status(400).json({ success: false, message: '无效的文本参数' });
+      // 检查请求体是否包含文本
+      const { text, options } = req.body;
+      
+      if (!text) {
+        res.status(400).json({ success: false, message: '缺少必需的文本参数' });
         return;
       }
-
-      // 限制文本长度（阿里云TTS有长度限制，通常为300个字符）
+      
+      // 如果文本太长，拒绝请求
       if (text.length > 300) {
-        console.log('文本长度超过限制:', text.length);
         res.status(400).json({ 
           success: false, 
-          message: '文本长度超过限制（最大300个字符）' 
+          message: '文本过长，文本长度不能超过300个字符'
         });
         return;
       }
       
-      // 验证区域参数
-      if (options.region && typeof options.region === 'string') {
-        const validRegions = ['shanghai', 'beijing', 'shenzhen'];
-        if (!validRegions.includes(options.region)) {
-          console.log('无效的区域参数:', options.region);
-          // 使用默认区域，而不是返回错误
-          options.region = process.env.ALIYUN_SERVICE_REGION || 'shanghai';
-          console.log('使用默认区域:', options.region);
-        }
+      console.log('准备合成文本:', text);
+      
+      // 确保令牌有效
+      if (!aliyunTTSService.isTokenValid()) {
+        console.log('令牌无效或已过期，尝试获取新令牌');
+        const token = await aliyunService.getToken();
+        console.log('成功获取新令牌:', token.substring(0, 10) + '...');
       }
-
-      console.log('开始调用阿里云服务进行语音合成...');
-      // 调用阿里云服务进行文本转语音
-      const audioBuffer = await aliyunService.textToSpeech(text, options);
-      console.log('阿里云语音合成成功, 音频大小:', audioBuffer.length);
-
-      // 设置响应头
-      res.setHeader('Content-Type', 'audio/mpeg');
-      res.setHeader('Content-Disposition', 'attachment; filename=speech.mp3');
+      
+      // 合成音频
+      const ttsOptions: TTSOptions = {
+        text,
+        format: options?.format || 'mp3',
+        voice: options?.voice || 'xiaoyun',
+        sample_rate: options?.sampleRate || options?.sample_rate || 16000,
+        volume: options?.volume || 50,
+        speech_rate: options?.speed || options?.speech_rate || 0,
+        pitch_rate: options?.pitch || options?.pitch_rate || 0
+      };
+      
+      console.log('开始语音合成，参数:', ttsOptions);
+      
+      const audioData = await aliyunTTSService.synthesize(ttsOptions);
+      
+      console.log(`语音合成成功，生成 ${audioData.length} 字节的音频数据`);
+      
+      // 设置响应类型
+      const contentType = ttsOptions.format === 'wav' ? 'audio/wav' : 'audio/mpeg';
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Length', audioData.length);
       
       // 发送音频数据
-      res.send(audioBuffer);
-      console.log('语音合成响应已发送');
-    } catch (error) {
-      console.error('文本转语音错误:', error);
-      console.error('错误详情:', error instanceof Error ? error.stack : '未知错误');
+      res.send(audioData);
       
-      res.status(500).json({ 
+    } catch (error) {
+      console.error('语音合成错误:', error);
+      
+      // 根据错误类型设置状态码
+      const isClientError = error instanceof Error && 
+        (error.message.includes('token') || error.message.includes('文本'));
+      
+      const statusCode = isClientError ? 400 : 500;
+      
+      res.status(statusCode).json({ 
         success: false, 
-        message: error instanceof Error ? error.message : '文本转语音失败',
-        error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : String(error)) : undefined
+        message: error instanceof Error ? error.message : '语音合成失败'
       });
     }
   }

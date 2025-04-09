@@ -6,51 +6,57 @@ import queryString from 'query-string';
 import crypto from 'crypto-js';
 
 // 服务器配置
-// 尝试使用多个可能的服务器地址
-// 在Android模拟器上不同的地址可能会工作
-let API_SERVERS = [
-  'http://10.0.2.2:3000',    // Android模拟器默认地址
-  'http://localhost:3000',   // 有时直接使用localhost可行
-  'http://127.0.0.1:3000',   // IP地址
+const API_SERVERS = [
+  // 真机访问时使用电脑的局域网 IP（需要替换为实际的电脑IP）
+  'http://192.168.150.52:3000',  
+  // Android 模拟器访问时使用的特殊地址
+  'http://10.0.2.2:3000',        
+  // 本地开发时使用
+  'http://localhost:3000'         
 ];
 
 // 设置默认服务器
 let API_SERVER = API_SERVERS[0];
 
 // 检测可用的服务器
-async function detectWorkingServer() {
-  if (Platform.OS !== 'android') return;
-
+async function detectWorkingServer(): Promise<void> {
+  console.log('开始检测可用服务器...');
+  
   for (const server of API_SERVERS) {
     try {
       console.log(`测试服务器地址: ${server}`);
       
-      // 使用Promise.race来避免长时间等待
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 2000)
+        setTimeout(() => reject(new Error('请求超时')), 3000)
       );
       
       const response = await Promise.race([
-        axios.get(`${server}/health`, { timeout: 2000 }),
+        axios.get(`${server}/health`, {
+          timeout: 3000,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }),
         timeoutPromise
-      ]);
+      ]) as { status: number };
       
-      if (response) {
-        console.log(`服务器地址 ${server} 可用，使用此地址`);
+      if (response && response.status === 200) {
+        console.log(`服务器地址可用: ${server}`);
         API_SERVER = server;
         return;
       }
     } catch (error) {
-      console.log(`服务器地址 ${server} 不可用`);
+      console.log(`服务器地址不可用: ${server}`, error instanceof Error ? error.message : '未知错误');
     }
   }
   
-  console.log(`无法连接到任何服务器，使用默认地址: ${API_SERVER}`);
+  console.warn(`无法连接到任何服务器，将使用默认地址: ${API_SERVER}`);
 }
 
-// 初始化时尝试检测服务器
-detectWorkingServer().catch(err => {
-  console.error('服务器检测过程出错:', err);
+// 应用启动时检测服务器
+detectWorkingServer().catch(error => {
+  console.error('服务器检测失败:', error instanceof Error ? error.message : '未知错误');
 });
 
 /**
@@ -276,6 +282,10 @@ class AliyunClientVoiceServiceClass {
    * 刷新STS临时凭证
    */
   private async refreshSTSCredentials(): Promise<void> {
+    if (!API_SERVER) {
+      throw new Error('API服务器地址未配置');
+    }
+
     const maxRetries = 3;
     let retryCount = 0;
     let lastError: any = null;
@@ -284,85 +294,109 @@ class AliyunClientVoiceServiceClass {
       try {
         console.log(`正在获取阿里云临时访问凭证...尝试 ${retryCount + 1}/${maxRetries}`);
         
-        // 增加超时时间，避免网络慢导致的问题
+        // 获取设备信息
+        const deviceInfo = {
+          platform: Platform.OS,
+          version: Platform.Version,
+          // 安全地获取设备信息，注意属性名大写
+          manufacturer: Platform.OS === 'android' ? Platform.constants?.Manufacturer : undefined,
+          brand: Platform.OS === 'android' ? Platform.constants?.Brand : undefined,
+          model: Platform.OS === 'android' ? Platform.constants?.Model : undefined
+        };
+
         const response = await axios.post(`${API_SERVER}/api/sts/credentials`, {
-          clientInfo: `${Platform.OS}-${Platform.Version}`
+          clientInfo: JSON.stringify(deviceInfo)
         }, {
-          timeout: 15000, // 15秒超时
+          timeout: 10000, // 10秒超时
           headers: {
+            'Accept': 'application/json',
             'Content-Type': 'application/json'
-          }
+          },
+          validateStatus: (status) => status === 200 // 只接受200状态码
         });
+
+        console.log('STS响应状态:', response.status);
+        console.log('STS响应类型:', typeof response.data);
         
-        if (response.data && response.data.success && response.data.data) {
-          this.stsCredentials = response.data.data;
-          
-          // 设置过期时间（提前5分钟过期，确保有足够时间刷新）
-          if (this.stsCredentials) {
-            const expireDate = new Date(this.stsCredentials.expiration);
-            this.credentialsExpireTime = expireDate.getTime() - (5 * 60 * 1000);
-            
-            console.log('获取临时访问凭证成功，过期时间:', this.stsCredentials.expiration);
-            return; // 成功获取凭证，退出函数
-          } else {
-            throw new Error('获取临时访问凭证失败：凭证无效');
-          }
-        } else {
-          throw new Error(`获取临时访问凭证失败：无效的响应格式: ${JSON.stringify(response.data)}`);
+        if (!response.data?.success || !response.data?.data) {
+          console.error('服务器返回无效响应:', JSON.stringify(response.data).substring(0, 200));
+          throw new Error(`无效的服务器响应: ${JSON.stringify(response.data)}`);
         }
+
+        const credentials = response.data.data;
+        
+        // 验证必要的凭证字段
+        const requiredFields = [
+          'accessKeyId',
+          'accessKeySecret',
+          'securityToken',
+          'expiration'
+        ];
+
+        const missingFields = requiredFields.filter(field => !credentials[field]);
+        if (missingFields.length > 0) {
+          console.error('STS凭证缺少字段:', missingFields);
+          console.error('收到的凭证数据:', JSON.stringify(credentials).substring(0, 200));
+          throw new Error(`STS凭证缺少必要字段: ${missingFields.join(', ')}`);
+        }
+
+        this.stsCredentials = credentials;
+        
+        // 设置过期时间（提前5分钟过期）
+        const expireDate = new Date(credentials.expiration);
+        this.credentialsExpireTime = expireDate.getTime() - (5 * 60 * 1000);
+        
+        console.log('成功获取临时访问凭证，过期时间:', credentials.expiration);
+        return;
+
       } catch (error) {
         lastError = error;
-        console.error(`获取临时访问凭证失败 (尝试 ${retryCount + 1}/${maxRetries}):`, error);
-        
-        // 根据错误类型显示不同的消息
+        retryCount++;
+
         if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data?.message || error.message;
+          console.error(`STS凭证获取失败 (${retryCount}/${maxRetries}):`, errorMessage);
+          
           if (error.code === 'ECONNABORTED') {
             this.showToast('服务器请求超时，正在重试...');
           } else if (error.code === 'ERR_NETWORK') {
             this.showToast('网络连接错误，请检查网络');
           } else if (error.response) {
             this.showToast(`服务器错误 (${error.response.status})`);
-          } else {
-            this.showToast('网络请求失败');
           }
+        } else {
+          console.error('STS凭证获取失败:', error instanceof Error ? error.message : '未知错误');
+          this.showToast('获取访问凭证失败');
         }
-        
-        retryCount++;
+
         if (retryCount < maxRetries) {
-          // 等待一段时间后重试
-          const delay = 2000 * retryCount; // 递增延迟
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 5000); // 指数退避，最大5秒
           console.log(`将在 ${delay/1000} 秒后重试...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
+
+    // 所有重试都失败后的处理
+    console.error('多次尝试获取STS凭证均失败');
     
-    // 如果所有重试都失败
-    console.error('多次尝试获取临时访问凭证均失败');
-    
-    // 使用模拟凭证用于开发测试（仅开发环境使用）
     if (__DEV__) {
-      console.log('开发环境：使用模拟凭证');
+      console.warn('开发环境：使用模拟凭证（仅用于测试）');
       this.stsCredentials = {
         accessKeyId: 'mock-access-key-id',
         accessKeySecret: 'mock-access-key-secret',
         securityToken: 'mock-security-token',
         expiration: new Date(Date.now() + 3600 * 1000).toISOString(),
         region: 'cn-shanghai',
-        ttsEndpoint: 'nls-speech.cn-shanghai.aliyuncs.com',
+        ttsEndpoint: 'nls-gateway-cn-shanghai.aliyuncs.com',
         ttsApiVersion: '2023-11-01',
         appKey: 'mock-app-key'
       };
       this.credentialsExpireTime = Date.now() + 3600 * 1000 - (5 * 60 * 1000);
       return;
     }
-    
-    // 抛出最后一个错误
-    if (lastError) {
-      throw lastError;
-    } else {
-      throw new Error('获取临时访问凭证失败：未知错误');
-    }
+
+    throw lastError || new Error('获取STS凭证失败：未知错误');
   }
 
   /**
@@ -557,223 +591,142 @@ class AliyunClientVoiceServiceClass {
           console.log('发送语音合成请求到服务器...');
           let response;
           try {
-            response = await axios.post(`${API_SERVER}/api/tts/synthesize`, {
-              text,
-              options,
-            }, {
+            // 构建语音合成请求参数
+            const requestParams = {
+              text: text,
+              options: {
+                format: options.format || 'mp3',
+                voice: options.voice || 'xiaoyun',
+                sample_rate: options.sampleRate || 16000,
+                volume: options.volume || 50,
+                speech_rate: options.speed || 0,
+                pitch_rate: options.pitch || 0
+              }
+            };
+            
+            console.log('语音合成参数:', JSON.stringify(requestParams));
+            
+            // 发送请求到服务器
+            response = await axios.post(`${API_SERVER}/api/tts/synthesize`, requestParams, {
               responseType: 'arraybuffer',
               timeout: 20000, // 增加超时时间到20秒
               headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'audio/mpeg, audio/wav'
               }
             });
-          } catch (apiError) {
-            if (retryCount < maxRetries) {
-              console.error(`语音合成请求失败 (尝试 ${retryCount + 1}/${maxRetries + 1}):`, apiError);
+          } catch (requestError) {
+            console.error('服务器请求失败:', requestError);
+            
+            if (axios.isAxiosError(requestError)) {
+              const errorMessage = requestError.response?.data || requestError.message;
+              console.error('服务器响应:', errorMessage);
               
-              // 根据错误类型显示不同的消息
-              if (axios.isAxiosError(apiError)) {
-                if (apiError.code === 'ECONNABORTED') {
-                  this.showToast('服务器请求超时，正在重试...');
-                } else if (apiError.code === 'ERR_NETWORK') {
-                  this.showToast('网络连接错误，正在重试...');
-                } else if (apiError.response) {
-                  this.showToast(`服务器错误 (${apiError.response.status})，正在重试...`);
-                } else {
-                  this.showToast('请求失败，正在重试...');
-                }
+              if (requestError.code === 'ECONNABORTED') {
+                this.showToast('服务器请求超时，请稍后再试');
+              } else if (requestError.code === 'ERR_NETWORK') {
+                this.showToast('网络连接错误，请检查网络');
+              } else if (requestError.response) {
+                this.showToast(`服务器错误 (${requestError.response.status})`);
+              } else {
+                this.showToast('语音合成请求失败');
               }
-              
-              retryCount++;
-              // 等待一段时间后重试
-              const delay = 1000 * retryCount;
-              await new Promise(resolve => setTimeout(resolve, delay));
-              continue; // 继续下一次循环
+            } else {
+              this.showToast('语音合成请求失败');
             }
             
-            console.error('语音合成请求多次失败:', apiError);
-            this.showToast('语音合成请求失败');
-            this.useLocalTTS(text);
-            return;
-          }
-
-          // 检查响应
-          if (!response || !response.data || response.data.length === 0) {
-            if (retryCount < maxRetries) {
-              console.error(`服务器返回的语音数据为空 (尝试 ${retryCount + 1}/${maxRetries + 1})`);
-              this.showToast('获取语音数据失败，正在重试...');
-              retryCount++;
-              await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-              continue;
-            }
-            
-            console.error('服务器返回的语音数据为空');
-            this.useLocalTTS(text);
-            return;
-          }
-
-          console.log('语音合成成功，保存音频文件...');
-          
-          // 将音频数据保存为临时文件
-          try {
-            // 确保临时目录存在
-            await this.ensureTempDirectory();
-            
-            // 保存音频文件
-            tempFilePath = `${RNFS.CachesDirectoryPath}/tts_${Date.now()}.mp3`;
-            
-            try {
-              await RNFS.writeFile(tempFilePath, Buffer.from(response.data).toString('base64'), 'base64');
-              console.log('音频文件已保存:', tempFilePath);
-            } catch (writeError) {
-              console.error('保存音频文件到缓存目录失败:', writeError);
-              // 尝试使用应用内部存储
-              tempFilePath = `${RNFS.DocumentDirectoryPath}/tts_${Date.now()}.mp3`;
-              try {
-                console.log('尝试保存到内部存储...');
-                await RNFS.writeFile(tempFilePath, Buffer.from(response.data).toString('base64'), 'base64');
-                console.log('音频文件已保存到内部存储:', tempFilePath);
-              } catch (innerWriteError) {
-                console.error('保存到内部存储也失败:', innerWriteError);
-                this.showToast('保存语音文件失败');
-                this.useLocalTTS(text);
-                return;
-              }
-            }
-          } catch (dirError) {
-            console.error('创建临时目录失败:', dirError);
-            this.showToast('存储空间问题');
-            this.useLocalTTS(text);
-            return;
-          }
-
-          console.log('播放语音...');
-          // 播放音频前检查确保Recording模块已正确初始化
-          try {
-            // 使用新创建的方法初始化录音实例
-            const audioInitialized = await this.createAudioInstance();
-            if (!audioInitialized) {
-              console.error('无法初始化录音实例，尝试继续播放');
-            }
-            
-            // 确保文件存在
-            const fileExists = await RNFS.exists(tempFilePath);
-            if (!fileExists) {
-              throw new Error(`音频文件不存在: ${tempFilePath}`);
-            }
-            
-            // 尝试播放
-            console.log('开始播放音频文件:', tempFilePath);
-            
-            // 添加重试机制
-            let playAttempts = 0;
-            const maxPlayAttempts = 3;
-            let playSuccess = false;
-            
-            while (playAttempts < maxPlayAttempts && !playSuccess) {
-              try {
-                playAttempts++;
-                console.log(`尝试播放音频 (${playAttempts}/${maxPlayAttempts})...`);
-                
-                // 确保播放器状态良好
-                if (playAttempts > 1) {
-                  // 重试之前重新创建录音实例
-                  await this.createAudioInstance();
-                }
-                
-                // 尝试播放
-                await Recording.play(tempFilePath);
-                
-                // 如果没有抛出异常，则播放成功
-                console.log('播放音频成功');
-                playSuccess = true;
-              } catch (retryError) {
-                console.error(`播放尝试 ${playAttempts} 失败:`, retryError);
-                
-                if (playAttempts < maxPlayAttempts) {
-                  // 等待一会儿再重试
-                  const delay = 1000 * playAttempts;
-                  console.log(`将在 ${delay}ms 后重试...`);
-                  await new Promise(resolve => setTimeout(resolve, delay));
-                }
-              }
-            }
-            
-            if (!playSuccess) {
-              throw new Error(`播放音频失败，已尝试 ${maxPlayAttempts} 次`);
-            }
-          } catch (playError) {
-            console.error('播放音频失败:', playError);
-            this.showToast('播放语音失败');
-            
-            // 清理临时文件
-            if (tempFilePath) {
-              try {
-                await RNFS.unlink(tempFilePath);
-              } catch (e) {}
-              tempFilePath = null;
-            }
-            
-            this.useLocalTTS(text);
-            return;
+            throw requestError;
           }
           
-          // 等待播放完成（假设每秒2个字，至少3秒）
-          const waitTime = Math.max(3000, text.length * 500); 
-          console.log(`等待播放完成，预计时间: ${waitTime}ms`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-
-          console.log('清理语音临时文件...');
-          // 播放完成后删除临时文件
-          if (tempFilePath) {
-            try {
-              await RNFS.unlink(tempFilePath);
-              console.log('临时文件已删除');
-              tempFilePath = null;
-            } catch (unlinkError) {
-              console.error('清理语音临时文件失败:', unlinkError);
-            }
+          // 检查响应状态
+          console.log('服务器响应状态:', response.status);
+          
+          if (response.status !== 200) {
+            console.error(`服务器返回错误状态码: ${response.status}`);
+            this.showToast(`语音合成失败: 服务器错误 (${response.status})`);
+            throw new Error(`服务器返回错误状态码: ${response.status}`);
           }
           
-          // 成功完成，退出函数
+          // 检查返回的数据是否有效
+          console.log(`收到的音频数据大小: ${response.data.byteLength} 字节`);
+          
+          if (!response.data || response.data.byteLength < 100) {
+            console.error('接收到的音频数据无效或太小');
+            this.showToast('生成的语音无效，请重试');
+            throw new Error('接收到的音频数据无效或太小');
+          }
+          
+          // 确保临时目录存在
+          await this.ensureTempDirectory();
+          
+          // 生成临时文件路径
+          const fileExt = options.format === 'wav' ? 'wav' : 'mp3';
+          tempFilePath = `${RNFS.CachesDirectoryPath}/speech_${Date.now()}.${fileExt}`;
+          
+          // 将音频数据保存到临时文件
+          console.log('将音频数据保存到临时文件:', tempFilePath);
+          await RNFS.writeFile(tempFilePath, this.arrayBufferToBase64(response.data), 'base64');
+          
+          // 播放音频
+          console.log('开始播放音频...');
+          
+          this.audioFilePath = tempFilePath;
+          await this.playAudio(tempFilePath);
+          
+          console.log('语音播放完成');
           return;
           
-        } catch (error) {
-          if (retryCount < maxRetries) {
-            console.error(`服务端语音合成错误 (尝试 ${retryCount + 1}/${maxRetries + 1}):`, error);
-            this.showToast('语音合成出错，正在重试...');
-            retryCount++;
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-            continue;
+        } catch (attemptError) {
+          console.error(`语音合成尝试 ${retryCount + 1} 失败:`, attemptError);
+          retryCount++;
+          
+          // 如果还有重试机会，等待一段时间后重试
+          if (retryCount <= maxRetries) {
+            const delayMs = 1000 * retryCount;
+            console.log(`将在 ${delayMs / 1000} 秒后重试...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+          } else {
+            console.error('语音合成尝试次数已达上限');
+            
+            // 所有重试都失败，尝试使用本地TTS
+            console.log('尝试使用本地TTS作为备选方案...');
+            this.useLocalTTS(text);
           }
-          
-          console.error('服务端语音合成错误:', error);
-          
-          // 清理临时文件
-          if (tempFilePath) {
-            try {
-              await RNFS.unlink(tempFilePath);
-            } catch (e) {}
-          }
-          
-          // 服务器请求失败，尝试使用设备的 TTS
-          this.useLocalTTS(text);
-          return;
         }
       }
+    } catch (error) {
+      console.error('语音合成过程出错:', error);
+      // 尝试使用本地TTS
+      this.useLocalTTS(text);
     } finally {
-      // 确保始终清理文件
-      if (tempFilePath) {
+      // 如果创建了临时文件但未成功播放，尝试清理
+      if (tempFilePath && tempFilePath !== this.audioFilePath) {
         try {
-          await RNFS.unlink(tempFilePath);
-          console.log('清理语音临时文件完成');
-        } catch (e) {
-          console.error('最终清理临时文件失败:', e);
+          const exists = await RNFS.exists(tempFilePath);
+          if (exists) {
+            console.log('清理未使用的临时文件:', tempFilePath);
+            await RNFS.unlink(tempFilePath);
+          }
+        } catch (cleanupError) {
+          console.warn('清理临时文件失败:', cleanupError);
         }
       }
     }
   }
   
+  /**
+   * 将ArrayBuffer转换为Base64字符串
+   */
+  private arrayBufferToBase64(buffer: ArrayBuffer): string {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
   /**
    * 确保临时目录存在
    */
@@ -849,6 +802,77 @@ class AliyunClientVoiceServiceClass {
     } catch (error) {
       console.error('创建录音实例失败:', error);
       return false;
+    }
+  }
+
+  /**
+   * 播放音频文件
+   * @param filePath 音频文件路径
+   */
+  private async playAudio(filePath: string): Promise<void> {
+    try {
+      console.log('准备播放音频文件:', filePath);
+      
+      // 确保文件存在
+      const fileExists = await RNFS.exists(filePath);
+      if (!fileExists) {
+        throw new Error(`音频文件不存在: ${filePath}`);
+      }
+      
+      // 添加重试机制
+      let playAttempts = 0;
+      const maxPlayAttempts = 3;
+      let playSuccess = false;
+      
+      while (playAttempts < maxPlayAttempts && !playSuccess) {
+        try {
+          playAttempts++;
+          console.log(`尝试播放音频 (${playAttempts}/${maxPlayAttempts})...`);
+          
+          // 确保播放器状态良好
+          if (playAttempts > 1) {
+            // 重试之前重新创建录音实例
+            await this.createAudioInstance();
+          }
+          
+          // 设置正在播放标志
+          this.isSpeaking = true;
+          
+          // 尝试播放
+          await Recording.play(filePath);
+          
+          // 如果没有抛出异常，则播放成功
+          console.log('开始播放音频成功');
+          playSuccess = true;
+          
+          // 等待播放完成（近似计算播放时间，每秒约播放2个字，至少3秒）
+          const estimatedPlayTime = 3000; // 至少3秒
+          console.log(`等待播放完成，预计至少 ${estimatedPlayTime/1000} 秒...`);
+          await new Promise(resolve => setTimeout(resolve, estimatedPlayTime));
+          
+          console.log('音频播放完成');
+        } catch (retryError) {
+          console.error(`播放尝试 ${playAttempts} 失败:`, retryError);
+          
+          if (playAttempts < maxPlayAttempts) {
+            // 等待一会儿再重试
+            const delay = 1000 * playAttempts;
+            console.log(`将在 ${delay}ms 后重试...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        } finally {
+          // 播放结束，重置标志
+          this.isSpeaking = false;
+        }
+      }
+      
+      if (!playSuccess) {
+        throw new Error(`播放音频失败，已尝试 ${maxPlayAttempts} 次`);
+      }
+    } catch (error) {
+      console.error('播放音频失败:', error);
+      this.showToast('播放语音失败');
+      throw error;
     }
   }
 }

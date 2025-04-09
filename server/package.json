@@ -17,6 +17,7 @@
     "@alicloud/pop-core": "^1.8.0",
     "@alicloud/sts-sdk": "^1.0.2",
     "@alicloud/tea-util": "^1.4.10",
+    "alibabacloud-nls": "^1.0.4",
     "axios": "^1.8.4",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",

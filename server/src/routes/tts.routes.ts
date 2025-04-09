@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import ttsController from '../controllers/tts.controller';
+import TTSController from '../controllers/tts.controller';
 
 const router = Router();
 
-// 文本转语音接口
-router.post('/synthesize', ttsController.textToSpeech);
+// 语音合成路由
+router.post('/synthesize', TTSController.synthesize);
 
 export default router; 

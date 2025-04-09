@@ -2,51 +2,60 @@ import { Platform, Alert, PermissionsAndroid, ToastAndroid } from 'react-native'
 import RNFS from 'react-native-fs';
 import Recording from 'react-native-recording';
 import axios from 'axios';
+import AliyunClientVoiceService from './AliyunClientVoiceService';
 
 // 服务器配置
-// 尝试使用多个可能的服务器地址
-// 在Android模拟器上不同的地址可能会工作
-let API_SERVERS = [
-  'http://10.0.2.2:3000',    // Android模拟器默认地址
-  'http://localhost:3000',   // 有时直接使用localhost可行
-  'http://127.0.0.1:3000',   // IP地址
+const API_SERVERS = [
+  // 真机访问时使用电脑的局域网 IP（需要替换为实际的电脑IP）
+  'http://192.168.150.52:3000',  
+  // Android 模拟器访问时使用的特殊地址
+  'http://10.0.2.2:3000',        
+  // 本地开发时使用
+  'http://localhost:3000'         
 ];
 
 // 设置默认服务器
 let API_SERVER = API_SERVERS[0];
 
 // 检测可用的服务器
-async function detectWorkingServer() {
-  if (Platform.OS !== 'android') return;
-
+async function detectWorkingServer(): Promise<void> {
+  console.log('开始检测可用服务器...');
+  
   for (const server of API_SERVERS) {
     try {
       console.log(`测试服务器地址: ${server}`);
+      
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 2000)
+        setTimeout(() => reject(new Error('请求超时')), 3000)
       );
       
       const response = await Promise.race([
-        axios.get(`${server}/health`, { timeout: 2000 }),
+        axios.get(`${server}/health`, {
+          timeout: 3000,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }),
         timeoutPromise
-      ]);
+      ]) as { status: number };
       
-      if (response) {
-        console.log(`服务器地址 ${server} 可用，使用此地址`);
+      if (response && response.status === 200) {
+        console.log(`服务器地址可用: ${server}`);
         API_SERVER = server;
         return;
       }
     } catch (error) {
-      console.log(`服务器地址 ${server} 不可用`, error);
+      console.log(`服务器地址不可用: ${server}`, error instanceof Error ? error.message : '未知错误');
     }
   }
   
-  console.log(`无法连接到任何服务器，使用默认地址: ${API_SERVER}`);
+  console.warn(`无法连接到任何服务器，将使用默认地址: ${API_SERVER}`);
 }
 
-// 初始化时尝试检测服务器
-detectWorkingServer().catch(err => {
-  console.error('服务器检测过程出错:', err);
+// 应用启动时检测服务器
+detectWorkingServer().catch(error => {
+  console.error('服务器检测失败:', error instanceof Error ? error.message : '未知错误');
 });
 
 // 设置全局未捕获异常处理器
@@ -469,9 +478,13 @@ class MixedVoiceServiceClass {
           timeout: 15000 // 设置超时时间为15秒
         });
 
-        // 检查响应
-        if (response.data && response.data.success) {
-          const recognizedText = response.data.text || '';
+        // 检查百度语音识别API的响应格式
+        console.log('收到服务器响应:', JSON.stringify(response.data).substring(0, 200));
+        
+        // 新的百度格式响应处理
+        if (response.data && response.data.err_no === 0 && response.data.result) {
+          // 百度API格式响应: { err_no: 0, err_msg: 'success.', corpus_no: '...', sn: '...', result: ['识别结果'] }
+          const recognizedText = response.data.result[0] || '';
           console.log('语音识别结果:', recognizedText);
           
           // 成功识别后删除临时文件
@@ -479,9 +492,25 @@ class MixedVoiceServiceClass {
           this.isRecording = false;
           
           return recognizedText;
+        } else if (response.data && response.data.success && response.data.text) {
+          // 兼容旧格式响应: { success: true, text: '识别结果' }
+          const recognizedText = response.data.text || '';
+          console.log('语音识别结果(旧格式):', recognizedText);
+          
+          // 成功识别后删除临时文件
+          this.deleteAudioFile();
+          this.isRecording = false;
+          
+          return recognizedText;
         } else {
-          console.error('语音识别失败:', response.data?.message || '未知错误');
-          this.showToast('语音识别失败');
+          // 处理错误情况
+          const errorMessage = 
+            response.data?.err_msg || 
+            response.data?.message || 
+            '语音识别失败，请重试';
+          
+          console.error('语音识别失败:', errorMessage);
+          this.showToast(errorMessage);
           
           // 识别失败也删除临时文件
           this.deleteAudioFile();
@@ -529,9 +558,9 @@ class MixedVoiceServiceClass {
   }
 
   /**
-   * 语音合成（使用阿里云）
-   * @param text 要播放的文本
-   * @param options 合成选项
+   * 将文本转换为语音
+   * @param text 要合成的文本
+   * @param options 语音合成选项
    */
   public async speak(text: string, options?: {
     format?: string;
@@ -543,13 +572,17 @@ class MixedVoiceServiceClass {
     region?: string;
   }): Promise<void> {
     try {
-      // 导入阿里云客户端语音服务
-      const AliyunClientVoiceService = require('./AliyunClientVoiceService').default;
+      console.log('MixedVoiceService: 调用阿里云客户端进行语音合成...');
       
-      // 调用阿里云客户端进行语音合成
-      return await AliyunClientVoiceService.speak(text, options);
+      // 直接调用阿里云客户端进行语音合成
+      await AliyunClientVoiceService.speak(text, options);
+      
+      console.log('MixedVoiceService: 语音合成成功');
     } catch (error) {
-      console.error('阿里云语音合成错误:', error);
+      console.error('MixedVoiceService: 阿里云语音合成错误:', error);
+      
+      // 显示友好的错误提示
+      this.showToast('语音合成失败，正在使用替代方案');
       
       // 如果阿里云服务失败，尝试使用本地TTS或其他备选方案
       this.useLocalTTS(text);

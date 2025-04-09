@@ -5,6 +5,7 @@ import bodyParser from 'body-parser';
 import ttsRoutes from './routes/tts.routes';
 import asrRoutes from './routes/asr.routes';
 import stsRoutes from './routes/sts.routes';
+import aliyunService from './services/aliyun.service';
 
 // 加载环境变量
 dotenv.config();
@@ -21,15 +22,34 @@ app.use(cors({
 app.use(bodyParser.json({ limit: '50mb' })); // 增加限制以处理大型音频数据
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
-// 路由
+// 健康检查路由
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    message: '服务器运行正常'
+  });
+});
+
+// 添加调试路由
+app.get('/debug/token', async (req, res) => {
+  try {
+    console.log('收到令牌调试请求');
+    const token = await aliyunService.getToken();
+    res.json({ success: true, token: token.substring(0, 10) + '...' });
+  } catch (error) {
+    console.error('令牌调试错误:', error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : '获取令牌失败'
+    });
+  }
+});
+
+// API路由
 app.use('/api/tts', ttsRoutes);
 app.use('/api/asr', asrRoutes);
 app.use('/api/sts', stsRoutes);
-
-// 健康检查
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: '服务器运行正常' });
-});
 
 // 启动服务器
 app.listen(PORT, () => {

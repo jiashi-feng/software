@@ -75,21 +75,6 @@ const Setting = ({ navigation }) => {
       style={styles.container}
     >
       <ScrollView>
-        <Surface style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButtonContainer}
-            onPress={handleGoBack}
-            activeOpacity={0.7}
-          >
-            <IconButton
-              icon="arrow-left"
-              size={24}
-              color="#6C5CE7"
-              onPress={undefined}
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>设置</Text>
-        </Surface>
 
         <Surface style={styles.section}>
           <Text style={styles.sectionTitle}>通用设置</Text>
@@ -204,19 +189,6 @@ const styles = StyleSheet.create({
   logoutButton: {
     margin: 16,
     marginTop: 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  backButtonContainer: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 16,
   },
 });
 
