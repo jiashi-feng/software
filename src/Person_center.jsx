@@ -49,7 +49,7 @@ const PersonCenter = ({ navigation }) => {
       id: 'family',
       title: '家庭成员',
       icon: 'account-group',
-      onPress: () => navigation.navigate('GroupChat'),
+      onPress: () => navigation.navigate('FamilyCheck'),
     },
     {
       id: 'taboo-settings',

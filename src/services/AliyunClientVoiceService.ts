@@ -7,10 +7,10 @@ import crypto from 'crypto-js';
 
 // 服务器配置
 const API_SERVERS = [
-  // 真机访问时使用电脑的局域网 IP（需要替换为实际的电脑IP）
-  'http://192.168.150.52:3000',  
   // Android 模拟器访问时使用的特殊地址
   'http://10.0.2.2:3000',        
+  // 真机访问时使用电脑的局域网 IP（需要替换为实际的电脑IP）
+  'http://192.168.150.52:3000',  
   // 本地开发时使用
   'http://localhost:3000'         
 ];
@@ -138,82 +138,26 @@ class AliyunClientVoiceServiceClass {
     try {
       console.log('初始化语音合成服务...');
       
-      // 设置全局错误处理器，特别处理AudioRecord错误
-      if (Platform.OS === 'android') {
-        const ErrorUtils = (global as any).ErrorUtils as {
-          getGlobalHandler: () => (error: Error, isFatal: boolean) => void;
-          setGlobalHandler: (callback: (error: Error, isFatal: boolean) => void) => void;
-        } | undefined;
-        
-        if (ErrorUtils) {
-          const previousHandler = ErrorUtils.getGlobalHandler();
-          
-          ErrorUtils.setGlobalHandler((error: Error, isFatal: boolean) => {
-            // 特别处理AudioRecord相关错误
-            if (error.message && (
-                error.message.includes('AudioRecord') || 
-                error.message.includes('Recording') ||
-                error.message.includes('play') ||
-                error.message.includes('stop')
-              )) {
-              console.error('捕获到AudioRecord相关错误:', error);
-              
-              // 显示更友好的提示
-              if (ToastAndroid) {
-                ToastAndroid.show('语音播放功能暂时不可用，请稍后再试', ToastAndroid.LONG);
-              }
-              
-              // 不将此错误视为致命错误
-              return previousHandler(error, false);
-            }
-            
-            // 处理其他错误
-            return previousHandler(error, isFatal);
-          });
-        }
-      }
-      
-      // 检查存储权限（用于保存临时音频文件）
+      // 检查麦克风权限
       if (Platform.OS === 'android') {
         try {
-          // 获取Android API版本
-          let apiLevel = 0;
-          try {
-            apiLevel = parseInt(Platform.Version.toString(), 10);
-            if (isNaN(apiLevel)) {
-              // 如果无法解析为数字，默认使用低版本处理方法
-              apiLevel = 28; // 默认为Android 9 Pie
-              console.log('无法确定Android API版本，使用默认API级别:', apiLevel);
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+            {
+              title: '需要麦克风权限',
+              message: '要使用语音功能，应用需要访问您的麦克风',
+              buttonPositive: '确定',
+              buttonNegative: '取消',
             }
-          } catch (versionError) {
-            console.error('解析API版本出错:', versionError);
-            apiLevel = 28; // 默认为Android 9 Pie
-          }
+          );
           
-          // Android 10 (API 29)及以上版本使用应用专属存储空间，不需要申请外部存储权限
-          if (apiLevel < 29) {
-            const storageGranted = await PermissionsAndroid.request(
-              PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-              {
-                title: '需要存储权限',
-                message: '要使用语音功能，应用需要访问您的存储',
-                buttonPositive: '确定',
-                buttonNegative: '取消',
-              }
-            );
-            
-            if (storageGranted !== PermissionsAndroid.RESULTS.GRANTED) {
-              this.showToast('需要存储权限才能使用语音功能');
-              throw new Error('没有存储权限');
-            }
-          } else {
-            console.log('Android 10及以上版本，使用应用专属存储空间');
-            // 对于Android 10+，我们将使用应用专属存储空间，不需要请求WRITE_EXTERNAL_STORAGE权限
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            console.warn('未获取麦克风权限');
+            // 不阻止继续初始化，因为播放不一定需要麦克风权限
           }
         } catch (permError) {
-          console.error('存储权限处理失败:', permError);
-          this.showToast('无法处理存储权限');
-          throw new Error('存储权限处理失败');
+          console.error('权限请求失败:', permError);
+          // 同样不阻止继续初始化
         }
       }
       
@@ -221,11 +165,11 @@ class AliyunClientVoiceServiceClass {
       try {
         console.log('配置音频播放器参数...');
         Recording.init({
-          sampleRate: 16000,
-          channels: 1,
-          bitsPerSample: 16,
-          audioSource: 6,
-          outputFormat: 1,
+          sampleRate: 16000,        // 采样率
+          channels: 1,              // 单声道
+          bitsPerSample: 16,        // 位深度
+          audioSource: 6,           // MIC音源 (react-native-recording中的常量)
+          outputFormat: 1           // AAC格式输出
         });
       } catch (initError) {
         console.error('音频播放器初始化失败:', initError);
@@ -769,11 +713,11 @@ class AliyunClientVoiceServiceClass {
   }
 
   /**
-   * 创建并初始化音频实例 - 防止"stop() called on an uninitialized AudioRecord"错误
+   * 创建并初始化音频实例
    */
   private async createAudioInstance(): Promise<boolean> {
     try {
-      console.log('创建新的录音实例...');
+      console.log('创建新的音频播放实例...');
       
       // 先尝试安全停止所有正在进行的操作
       try {
@@ -787,20 +731,20 @@ class AliyunClientVoiceServiceClass {
       
       // 初始化录音模块
       Recording.init({
-        sampleRate: 16000,
-        channels: 1,
-        bitsPerSample: 16,
-        audioSource: 6,
-        outputFormat: 1,
+        sampleRate: 16000,        // 采样率
+        channels: 1,              // 单声道
+        bitsPerSample: 16,        // 位深度
+        audioSource: 6,           // MIC音源 (react-native-recording中的常量)
+        outputFormat: 1           // AAC格式输出
       });
       
       // 等待初始化完成
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      console.log('录音实例创建成功');
+      console.log('音频播放实例创建成功');
       return true;
     } catch (error) {
-      console.error('创建录音实例失败:', error);
+      console.error('创建音频播放实例失败:', error);
       return false;
     }
   }
@@ -838,16 +782,20 @@ class AliyunClientVoiceServiceClass {
           // 设置正在播放标志
           this.isSpeaking = true;
           
-          // 尝试播放
+          // 读取文件为base64字符串
+          const fileContent = await RNFS.readFile(filePath, 'base64');
+          
+          // 使用react-native-recording播放
           await Recording.play(filePath);
           
           // 如果没有抛出异常，则播放成功
           console.log('开始播放音频成功');
           playSuccess = true;
           
-          // 等待播放完成（近似计算播放时间，每秒约播放2个字，至少3秒）
-          const estimatedPlayTime = 3000; // 至少3秒
-          console.log(`等待播放完成，预计至少 ${estimatedPlayTime/1000} 秒...`);
+          // 估算播放时间（每秒字符数约为2个）
+          const fileSize = await RNFS.stat(filePath);
+          const estimatedPlayTime = Math.max(3000, fileSize.size / 2000 * 1000);
+          console.log(`等待播放完成，预计约 ${estimatedPlayTime/1000} 秒...`);
           await new Promise(resolve => setTimeout(resolve, estimatedPlayTime));
           
           console.log('音频播放完成');

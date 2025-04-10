@@ -26,7 +26,6 @@
     "query-string": "^9.1.1",
     "react": "19.0.0",
     "react-native": "0.78.0",
-    "react-native-audio": "^4.3.0",
     "react-native-dropdown-select-list": "^2.0.5",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.24.0",

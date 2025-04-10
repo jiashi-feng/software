@@ -250,11 +250,11 @@ class MixedVoiceServiceClass {
       
       // 初始化录音模块
       Recording.init({
-        sampleRate: 16000,
-        channels: 1,
-        bitsPerSample: 16,
-        audioSource: 6,
-        outputFormat: 1,
+        sampleRate: 16000,        // 采样率
+        channels: 1,              // 单声道
+        bitsPerSample: 16,        // 位深度
+        audioSource: 6,           // MIC音源 (react-native-recording中的常量)
+        outputFormat: 1           // AAC格式输出
       });
       
       // 等待初始化完成
@@ -416,6 +416,9 @@ class MixedVoiceServiceClass {
       return '';
     }
     
+    // 更新状态为不在录音
+    this.isRecording = false;
+    
     // 最外层try-catch，确保无论发生什么都不会导致应用崩溃
     try {
       console.log('准备停止录音...');
@@ -429,7 +432,6 @@ class MixedVoiceServiceClass {
         } catch (pathError) {
           console.error('创建录音文件路径失败:', pathError);
           this.showToast('无法创建录音文件');
-          this.isRecording = false;
           return '';
         }
       }
@@ -443,7 +445,6 @@ class MixedVoiceServiceClass {
       } catch (stopError) {
         console.error('停止录音失败:', stopError);
         this.showToast('停止录音失败');
-        this.isRecording = false;
         return '';
       }
 
@@ -451,7 +452,6 @@ class MixedVoiceServiceClass {
       if (!audioData || audioData.length === 0) {
         console.error('获取到的音频数据为空');
         this.showToast('录音数据为空，请重试');
-        this.isRecording = false;
         return '';
       }
       
@@ -463,7 +463,6 @@ class MixedVoiceServiceClass {
       } catch (writeError) {
         console.error('保存录音文件失败:', writeError);
         this.showToast('保存录音失败');
-        this.isRecording = false;
         return '';
       }
 
@@ -489,7 +488,6 @@ class MixedVoiceServiceClass {
           
           // 成功识别后删除临时文件
           this.deleteAudioFile();
-          this.isRecording = false;
           
           return recognizedText;
         } else if (response.data && response.data.success && response.data.text) {
@@ -499,7 +497,6 @@ class MixedVoiceServiceClass {
           
           // 成功识别后删除临时文件
           this.deleteAudioFile();
-          this.isRecording = false;
           
           return recognizedText;
         } else {
@@ -514,7 +511,6 @@ class MixedVoiceServiceClass {
           
           // 识别失败也删除临时文件
           this.deleteAudioFile();
-          this.isRecording = false;
           
           return '';
         }
@@ -524,7 +520,6 @@ class MixedVoiceServiceClass {
         
         // API调用失败也删除临时文件
         this.deleteAudioFile();
-        this.isRecording = false;
         
         return '';
       }

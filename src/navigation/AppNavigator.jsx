@@ -32,7 +32,7 @@ import AddCustomTaboo from '../AddCustomTaboo';
 import JoinFamily from '../JoinFamily';
 import CreateFamily from '../CreateFamily';
 import FamilyTaskDetail from '../Family_task_detail';
-
+import FamilyCheck from '../familycheck';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -204,6 +204,11 @@ const AppNavigator = () => {
           name="AbilityChoice" 
           component={AbilityChoice}
           options={{ title: '技能选择' }}
+        />
+        <Stack.Screen 
+          name="FamilyCheck" 
+          component={FamilyCheck}
+          options={{ title: '家庭' }}
         />
         <Stack.Screen 
           name="MainTabs" 

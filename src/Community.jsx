@@ -167,6 +167,7 @@ const Community = ({ navigation }) => {
             onChangeText={handleSearch}
             value={filters.searchQuery}
             style={styles.searchBar}
+            inputStyle={styles.searchInput}
           />
         </Surface>
 
@@ -181,6 +182,8 @@ const Community = ({ navigation }) => {
               selected={filters.category === category}
               onPress={() => handleCategoryChange(category)}
               style={styles.categoryChip}
+              textStyle={styles.categoryChipText}
+              compact
             >
               {category}
             </Chip>
@@ -199,6 +202,8 @@ const Community = ({ navigation }) => {
                 selected
                 onClose={() => handleTagPress(tag)}
                 style={styles.selectedTag}
+                textStyle={styles.categoryChipText}
+                compact
               >
                 {tag}
               </Chip>
@@ -348,25 +353,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    padding: 16,
+    padding: 8,
+    paddingVertical: 6,
     elevation: 4,
   },
   searchBar: {
     elevation: 0,
+    height: 40,
+    borderRadius: 20,
+  },
+  searchInput: {
+    fontSize: 14,
+    height: 40,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   categoriesContainer: {
-    padding: 16,
-    paddingTop: 0,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   categoryChip: {
     marginRight: 8,
+    height: 32,
+  },
+  categoryChipText: {
+    fontSize: 12,
   },
   selectedTagsContainer: {
     paddingHorizontal: 16,
-    marginBottom: 8,
+    marginTop: 0,
+    marginBottom: 4,
+    height: 36,
   },
   selectedTag: {
     marginRight: 8,
+    height: 32,
   },
   postsContainer: {
     padding: 16,
