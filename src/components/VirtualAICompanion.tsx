@@ -20,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useVirtualAICompanion } from './VirtualAICompanionProvider';
 import { MixedVoiceService } from '../services/MixedVoiceService';
-
+import {CommonImages} from '../assets/images';
 // 获取屏幕尺寸
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -327,7 +327,7 @@ const VirtualAICompanion: React.FC<VirtualAICompanionProps> = ({
       <TouchableWithoutFeedback onPress={handlePress}>
         <View style={styles.innerContainer}>
           <Image
-            source={require('../assets/images/ai_assistant.png')}
+            source={CommonImages.ai_assistant}
             style={styles.image}
             resizeMode="cover"
           />

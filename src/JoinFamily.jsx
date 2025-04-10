@@ -8,7 +8,7 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import { IconButton } from 'react-native-paper';
+import {CommonImages} from './assets/images';
 import LinearGradient from 'react-native-linear-gradient';
 
 // 模拟家庭数据
@@ -18,14 +18,14 @@ const mockSearchResults = [
     name: '快乐家庭',
     familyId: 'F001',
     memberCount: 4,
-    avatar: require('./assets/images/avatar.png'),
+    avatar:CommonImages.avatars,
   },
   {
     id: '2',
     name: '温暖之家',
     familyId: 'F002',
     memberCount: 3,
-    avatar: require('./assets/images/avatar.png'),
+    avatar: CommonImages.avatarss,
   },
 ];
 

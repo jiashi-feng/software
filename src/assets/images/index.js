@@ -37,6 +37,8 @@ export const CommonImages = {
   a10:require("../common/player.png"),
   a11:require("../common/a11.png"),
   a12:require("../common/a12.png"),
+  ai_assistant:require("../common/ai_assistant.png"),
+  ai_chat:require("../common/ai_chat.png"),
   tanchuangBg:require("../common/d1.jpg"),
 };
 

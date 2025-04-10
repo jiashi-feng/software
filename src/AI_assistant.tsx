@@ -19,7 +19,7 @@ import {
   Avatar,
   Chip,
 } from 'react-native-paper';
-import CustomIcon from './components/CustomIcon';
+import {CommonImages} from './assets/images';
 import { MixedVoiceService } from './services/MixedVoiceService';
 import { TaskService } from './services/TaskService';
 import { Task } from './types/Task';
@@ -79,7 +79,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
       author: {
         id: AI_ID,
         firstName: '小助手',
-        imageUrl: require('./assets/images/ai_assistant.png'),
+        imageUrl: CommonImages.ai_chat,
       },
       type: 'text',
     };
@@ -369,7 +369,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
               {message.author.id === AI_ID && index > 0 && (
                 <Avatar.Image
                   size={32}
-                  source={require('./assets/images/ai_assistant.png')}
+                  source={CommonImages.ai_chat}
                   style={styles.avatar}
                 />
               )}

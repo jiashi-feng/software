@@ -274,7 +274,7 @@ const AppNavigator = () => {
           name="ExchangeHistory"
           component={ExchangeHistory}
           options={{
-            title: '兑换记录',
+            title: '积分兑换记录',
             headerBackTitle: '返回',
           }}
         />

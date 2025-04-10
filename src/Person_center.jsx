@@ -64,6 +64,12 @@ const PersonCenter = ({ navigation }) => {
       onPress: () => isLoggedIn ? navigation.navigate('SpecialScenarios') : navigation.navigate('LogIn'),
     },
     {
+      icon: 'history',
+      title: '积分兑换记录',
+      onPress: () => navigation.navigate('ExchangeHistory'),
+      color: '#4A6FA5',
+    },
+    {
       id: 'settings',
       title: '设置',
       icon: 'cog',
