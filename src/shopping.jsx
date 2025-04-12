@@ -213,8 +213,8 @@ const Shopping = ({ navigation }) => {
         {/* 积分显示和赚取按钮 */}
         <View style={styles.pointsSection}>
           <View style={styles.pointsDisplay}>
-            <CustomIcon name="coin" size={24} color={COLORS.primary} />
-            <Text style={styles.pointsText}>{userPoints}</Text>
+            <Text style={styles.currencySymbol}>🪙</Text>
+            <Text style={styles.pointsText}>积分{userPoints}</Text>
           </View>
           <Button
             mode="contained"
@@ -278,10 +278,11 @@ const Shopping = ({ navigation }) => {
                 <Text style={styles.exchangeCount}>
                   已兑换 {product.exchangeCount} 次
                 </Text>
+                {/* 商品卡片中的积分显示 */}
                 <View style={styles.productBottom}>
                   <View style={styles.pointsContainer}>
-                    <CustomIcon name="coin" size={16} color={COLORS.primary} />
-                    <Text style={styles.productPoints}>{product.points}</Text>
+                    <Text style={styles.smallCurrencySymbol}>🪙</Text>
+                    <Text style={styles.productPoints}>积分{product.points}</Text>
                   </View>
                   <Button
                     mode="contained"
@@ -388,7 +389,9 @@ const styles = StyleSheet.create({
   pointsText: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: 8,
+    marginLeft: 0,
+    marginRight: 4,
+    color: COLORS.primary,
   },
   earnButton: {
     borderRadius: 20,
@@ -463,7 +466,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   productPoints: {
-    marginLeft: 4,
+    marginLeft: 0,
     fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.primary,
@@ -480,6 +483,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginVertical: 0,
     marginHorizontal: 0,
+  },
+  currencySymbol: {
+    fontSize: 20,
+    marginRight: 4,
+  },
+  smallCurrencySymbol: {
+    fontSize: 16,
+    marginRight: 4,
   },
 });
 

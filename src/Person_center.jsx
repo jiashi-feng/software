@@ -64,6 +64,7 @@ const PersonCenter = ({ navigation }) => {
       onPress: () => isLoggedIn ? navigation.navigate('SpecialScenarios') : navigation.navigate('LogIn'),
     },
     {
+      id: 'exchange-history',
       icon: 'history',
       title: '积分兑换记录',
       onPress: () => navigation.navigate('ExchangeHistory'),

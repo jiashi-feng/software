@@ -33,10 +33,11 @@
     "react-native-linear-gradient": "^2.8.3",
     "react-native-paper": "^5.13.1",
     "react-native-permissions": "^5.3.0",
-    "react-native-reanimated": "^3.17.1",
+    "react-native-reanimated": "^3.17.3",
     "react-native-recording": "^0.5.1",
     "react-native-safe-area-context": "^5.3.0",
     "react-native-screens": "^4.9.2",
+    "react-native-sound": "^0.11.2",
     "react-native-vector-icons": "^10.2.0",
     "react-redux": "^9.2.0"
   },
@@ -56,6 +57,7 @@
     "@types/react-test-renderer": "^19.0.0",
     "eslint": "^8.19.0",
     "jest": "^29.6.3",
+    "metro-react-native-babel-preset": "^0.77.0",
     "prettier": "2.8.8",
     "react-test-renderer": "19.0.0",
     "typescript": "5.0.4"

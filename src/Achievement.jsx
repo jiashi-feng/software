@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#7b4f93',
   },
   achievementsContainer: {
     paddingHorizontal: 12,
@@ -173,10 +173,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   achievementIcon: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#e53f63',
   },
   unlockedIcon: {
-    backgroundColor: '#6200ee',
+    backgroundColor: '#ab4c53',
   },
   achievementInfo: {
     marginLeft: 12,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   },
   achievementDescription: {
     fontSize: 13,
-    color: '#666',
+    color: '#d05eb5',
     marginTop: 2,
   },
   progressContainer: {
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 13,
-    color: '#666',
+    color: '#f1a7d6',
     width: 40, // 固定宽度
     textAlign: 'right',
   },
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   pointsText: {
     marginLeft: 4,
     fontSize: 13,
-    color: '#6200ee',
+    color: '#7b4f93',
     fontWeight: 'bold',
   },
 });

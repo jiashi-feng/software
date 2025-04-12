@@ -16,7 +16,7 @@ import {
   IconButton,
 } from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
-import { themeGradients } from './styles/theme';
+
 
 const Setting = ({ navigation }) => {
   const [notifications, setNotifications] = useState(true);
@@ -47,7 +47,7 @@ const Setting = ({ navigation }) => {
       id: 'task',
       title: '任务设置',
       icon: 'checkbox-marked-circle',
-      onPress: () => navigation.navigate('Index'),
+      onPress: () => navigation.navigate('TaskDetail'),
     },
     {
       id: 'notification',
