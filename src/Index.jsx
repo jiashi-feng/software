@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,34 +13,43 @@ import {
   Avatar,
   IconButton,
 } from 'react-native-paper';
-import { CommonImages } from './assets/images';
+import { CommonImages, FamilyAvatars } from './assets/images';
 import LinearGradient from 'react-native-linear-gradient';
+import { useFamily } from './store/FamilyContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const mockFamilies = [
-  {
-    id: 1,
-    name: '家庭1',
-    description: '身份:管理者\n',
-    quote: '一定要认真完成任务',
-    photo: CommonImages.avatars,
-  },
-  {
-    id: 2,
-    name: '家庭2',
-    description: '身份:普通成员',
-    quote: '加油。',
-    photo: CommonImages.avatarss,
-  },
-];
-
 const Index = ({ navigation }) => {
-  const [selectedFamily, setSelectedFamily] = useState(mockFamilies[0]);
+  const { hasFamily, familyInfo, loading } = useFamily();
+  const [selectedFamily, setSelectedFamily] = useState(null);
 
-  const handleFamilySelect = (family) => {
-    setSelectedFamily(family);
+  // 处理家庭头像来源
+  const getFamilyAvatarSource = (avatar) => {
+    if (!avatar) return CommonImages.placeholder;
+    
+    // 如果是默认头像的键名，从FamilyAvatars获取
+    if (typeof avatar === 'string' && avatar.startsWith('profile')) {
+      return FamilyAvatars[avatar];
+    }
+    
+    // 如果是base64字符串
+    if (typeof avatar === 'string' && avatar.startsWith('data:image')) {
+      return { uri: avatar };
+    }
+    
+    return avatar;
   };
+
+  useEffect(() => {
+    if (hasFamily && familyInfo) {
+      setSelectedFamily({
+        ...familyInfo,
+        photo: getFamilyAvatarSource(familyInfo.avatar)
+      });
+    } else {
+      setSelectedFamily(null);
+    }
+  }, [hasFamily, familyInfo]);
 
   return (
     <View style={styles.container}>
@@ -97,72 +106,74 @@ const Index = ({ navigation }) => {
 
         {/* 中间标题 */}
         <View style={styles.titleContainer}>
-          <Text style={styles.mainTitle}>✨ 选择一个家庭 ✨</Text>
+          <Text style={styles.mainTitle}>
+            {hasFamily ? `✨ ${familyInfo.name} ✨` : '✨ 请创建一个家庭 ✨'}
+          </Text>
         </View>
 
         {/* 主角色卡片 */}
         <View style={styles.cardContainer}>
-          <TouchableOpacity 
-            style={styles.mainCard}
-            onPress={() => navigation.navigate('GroupChat')}
-          >
-            <ImageBackground
-              source={selectedFamily.photo}
-              style={styles.characterImage}
-              imageStyle={styles.characterImageStyle}
-            >
+          {loading ? (
+            <View style={[styles.mainCard, styles.loadingCard]}>
+              <Text style={styles.loadingText}>加载中...</Text>
+            </View>
+          ) : (
+            hasFamily && selectedFamily ? (
               <TouchableOpacity 
-                style={styles.startButton}
+                style={styles.mainCard}
                 onPress={() => navigation.navigate('GroupChat')}
               >
-                <Text style={styles.startButtonText}>开启互动</Text>
+                <ImageBackground
+                  source={selectedFamily.photo}
+                  style={styles.characterImage}
+                  imageStyle={styles.characterImageStyle}
+                >
+                  <TouchableOpacity 
+                    style={styles.startButton}
+                    onPress={() => navigation.navigate('GroupChat')}
+                  >
+                    <Text style={styles.startButtonText}>开启互动</Text>
+                  </TouchableOpacity>
+                </ImageBackground>
               </TouchableOpacity>
-            </ImageBackground>
-          </TouchableOpacity>
-        </View>
-
-        {/* 底部角色选择 */}
-        <View style={styles.bottomSection}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.avatarScrollContainer}
-            contentContainerStyle={styles.avatarScrollContent}
-          >
-            {mockFamilies.map((family, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => handleFamilySelect(family)}
-                style={styles.avatarContainer}
-              >
-                <Image
-                  source={family.photo}
-                  style={[
-                    styles.avatar,
-                    selectedFamily?.id === family.id && styles.selectedAvatar
-                  ]}
-                />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {selectedFamily && (
-            <View style={styles.familyInfoContainer}>
-              <Text style={styles.familyName}>
-                家庭{selectedFamily.id} Lv{selectedFamily.level}
-              </Text>
-              <Text style={styles.familyRole}>
-                
-              </Text>
-              <Text style={styles.familyDescription}>
-                {selectedFamily.description}
-              </Text>
-              <Text style={styles.familyQuote}>
-                {selectedFamily.quote}
-              </Text>
-            </View>
+            ) : (
+              <View style={styles.mainCard}>
+                <ImageBackground
+                  source={CommonImages.single}
+                  style={styles.characterImage}
+                  imageStyle={styles.characterImageStyle}
+                >
+                </ImageBackground>
+              </View>
+            )
           )}
         </View>
+
+        {!hasFamily && !loading && (
+          <View style={styles.bottomPromptContainer}>
+            <Text style={styles.bottomPromptText}>个性化智能管理小助手值得拥有</Text>
+          </View>
+        )}
+
+        {/* 底部信息区域 */}
+        {hasFamily && selectedFamily && (
+          <View style={styles.bottomSection}>
+            <View style={styles.familyInfoContainer}>
+              <Text style={styles.familyName}>
+                {selectedFamily.name}
+              </Text>
+              <Text style={styles.familyRole}>
+                身份: {selectedFamily.role || '管理员'}
+              </Text>
+              <Text style={styles.familyDescription}>
+                {selectedFamily.description || '这是您创建的家庭'}
+              </Text>
+              <Text style={styles.familyQuote}>
+                {selectedFamily.quote || '一起创建温馨的家'}
+              </Text>
+            </View>
+          </View>
+        )}
       </LinearGradient>
     </View>
   );
@@ -203,7 +214,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   mainTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
@@ -222,6 +233,62 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: 'white',
     elevation: 4,
+  },
+  loadingCard: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#666',
+  },
+  assistantTextContainer: {
+    width: '100%',
+    marginTop: 'auto',
+    alignItems: 'center',
+    paddingBottom: 30,
+  },
+  assistantText: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 10,
+    borderRadius: 15,
+    overflow: 'hidden',
+    textShadowColor: 'rgba(0,0,0,0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 5,
+    maxWidth: '90%',
+    marginBottom: 20,
+  },
+  createButton: {
+    backgroundColor: '#9B7EDE',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  createButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  joinButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#9B7EDE',
+  },
+  joinButtonText: {
+    color: '#9B7EDE',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   characterImage: {
     width: '100%',
@@ -248,81 +315,45 @@ const styles = StyleSheet.create({
   bottomSection: {
     marginTop: 'auto',
     paddingBottom: 40,
-    alignItems: 'center',
-  },
-  avatarScrollContainer: {
-    marginBottom: 16,
-    width: '100%',
-  },
-  avatarScrollContent: {
-    justifyContent: 'center',
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-  },
-  avatarContainer: {
-    marginHorizontal: 8,
-    height: 50,
-    justifyContent: 'center',
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  selectedAvatar: {
-    borderColor: '#8A2BE2',
   },
   familyInfoContainer: {
-    paddingHorizontal: 20,
-    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 15,
+    padding: 15,
+    margin: 20,
   },
   familyName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    marginBottom: 5,
   },
   familyRole: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 8,
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 5,
   },
   familyDescription: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 4,
+    color: '#555',
+    marginBottom: 5,
   },
   familyQuote: {
     fontSize: 14,
-    color: '#999',
     fontStyle: 'italic',
-    textAlign: 'center',
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 8,
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  navItem: {
-    alignItems: 'center',
-  },
-  navItemActive: {
-    transform: [{scale: 1.1}],
-  },
-  navText: {
-    fontSize: 12,
     color: '#666',
-    marginTop: -8,
   },
-  navTextActive: {
+  bottomPromptContainer: {
+    width: '100%',
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 15,
+    marginBottom: 200,
+  },
+  bottomPromptText: {
+    fontSize: 16,
     color: '#6200ee',
-    fontWeight: 'bold',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
 

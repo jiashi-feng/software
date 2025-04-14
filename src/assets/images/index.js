@@ -12,6 +12,17 @@ export const ProductImages = {
   defaultProduct: require('../products/default_product.jpg'),
 };
 
+// 家庭头像
+export const FamilyAvatars = {
+  profile1: require('../common/profile_picture1.png'),
+  profile2: require('../common/profile_picture2.png'),
+  profile3: require('../common/profile_picture3.png'),
+  profile4: require('../common/profile_picture4.png'),
+  profile5: require('../common/profile_picture5.png'),
+  profile6: require('../common/profile_picture6.png'),
+  profile7: require('../common/profile_picture7.png'),
+};
+
 // 通用图片
 export const CommonImages = {
   // Logo 和图标
@@ -23,8 +34,8 @@ export const CommonImages = {
   emptyBg: require('../common/empty_bg.png'),
   // 登录页背景
   background: require('../common/background.png'),
-  avatars: require('../common/avatar.png'),
-  avatarss: require('../common/avatarss.png'),
+  default_avatar:require("../common/default_avatar.png"),
+  single:require("../common/single.png"),
   unlogin:require("../common/unlogin.png"),
   a2:require("../common/a2.png"),
   a3:require("../common/a3.png"),
@@ -32,10 +43,7 @@ export const CommonImages = {
   a5:require("../common/a5.png"),
   a6:require("../common/a6.png"),
   a7:require("../common/a7.png"),
-  a8:require("../common/a8.png"),
-  a9:require("../common/a9.png"),
   a10:require("../common/player.png"),
-  a11:require("../common/a11.png"),
   a12:require("../common/a12.png"),
   ai_assistant:require("../common/ai_assistant.png"),
   ai_chat:require("../common/ai_chat.png"),
@@ -45,5 +53,6 @@ export const CommonImages = {
 // 导出所有图片
 export default {
   ...ProductImages,
+  ...FamilyAvatars,
   ...CommonImages,
 }; 

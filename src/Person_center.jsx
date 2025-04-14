@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -85,12 +86,34 @@ const PersonCenter = ({ navigation }) => {
     }
   };
 
+  // 处理退出登录
+  const handleLogout = async () => {
+    Alert.alert(
+      '退出登录',
+      '确定要退出登录吗？',
+      [
+        {
+          text: '取消',
+          style: 'cancel'
+        },
+        {
+          text: '确定',
+          onPress: async () => {
+            await logout();
+            // 退出登录后回到首页
+            navigation.navigate('MainTabs', { screen: 'Index' });
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Surface style={styles.header}>
         <TouchableOpacity onPress={handleUserInfoPress} style={styles.userInfo}>
           {isLoggedIn ? (
-            <Avatar.Image size={80} source={userInfo.avatar}  />
+            <Avatar.Image size={80} source={CommonImages.default_avatar}  />
           ) : (
             <Avatar.Image size={80} source={CommonImages.unlogin}  style={{backgroundColor:'#fff'}}/>
           )}
@@ -130,9 +153,7 @@ const PersonCenter = ({ navigation }) => {
       {isLoggedIn ? (
         <Button
           mode="outlined"
-          onPress={() => {
-            logout();
-          }}
+          onPress={handleLogout}
           style={styles.logoutButton}
         >
           退出登录
