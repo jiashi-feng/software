@@ -12,15 +12,20 @@ import {
 import {
   Avatar,
   IconButton,
+  Badge,
 } from 'react-native-paper';
 import { CommonImages, FamilyAvatars } from './assets/images';
 import LinearGradient from 'react-native-linear-gradient';
 import { useFamily } from './store/FamilyContext';
+import { useNotification } from './store/NotificationContext';
+import { useAuth } from './store/AuthContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const Index = ({ navigation }) => {
   const { hasFamily, familyInfo, loading } = useFamily();
+  const { hasUnread } = useNotification();
+  const { isLoggedIn } = useAuth();
   const [selectedFamily, setSelectedFamily] = useState(null);
 
   // 处理家庭头像来源
@@ -60,6 +65,28 @@ const Index = ({ navigation }) => {
         {/* 顶部标题和按钮区 */}
         <View style={styles.header}>
           <View style={styles.rightHeader}>
+            <TouchableOpacity 
+              style={styles.headerButton}
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.7}
+            >
+              <View>
+                <IconButton
+                  icon="bell"
+                  size={24}
+                  iconColor="#333"
+                  onPress={undefined}
+                />
+                {isLoggedIn && hasUnread && (
+                  <Badge
+                    size={8}
+                    style={styles.notificationBadge}
+                  />
+                )}
+              </View>
+              <Text style={styles.buttonText}>消息</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity 
               style={styles.headerButton}
               onPress={() => navigation.navigate('TaskDetail')}
@@ -201,6 +228,12 @@ const styles = StyleSheet.create({
   headerButton: {
     alignItems: 'center',
     marginLeft: 16,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'red',
   },
   buttonText: {
     fontSize: 12,

@@ -21,6 +21,10 @@ export const FamilyAvatars = {
   profile5: require('../common/profile_picture5.png'),
   profile6: require('../common/profile_picture6.png'),
   profile7: require('../common/profile_picture7.png'),
+  profile8: require('../common/profile_picture8.png'),
+  profile9: require('../common/profile_picture9.png'),
+  profile10: require('../common/profile_picture10.png'),
+  profile11: require('../common/profile_picture11.png'),
 };
 
 // 通用图片

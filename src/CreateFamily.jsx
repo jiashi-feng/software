@@ -32,6 +32,10 @@ const CreateFamily = ({ navigation }) => {
     { key: 'profile5', source: FamilyAvatars.profile5 },
     { key: 'profile6', source: FamilyAvatars.profile6 },
     { key: 'profile7', source: FamilyAvatars.profile7 },
+    { key: 'profile8', source: FamilyAvatars.profile8 },
+    { key: 'profile9', source: FamilyAvatars.profile9 },
+    { key: 'profile10', source: FamilyAvatars.profile10 },
+    { key: 'profile11', source: FamilyAvatars.profile11 },
   ];
 
   const handleSelectImage = () => {

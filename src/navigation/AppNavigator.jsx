@@ -33,6 +33,8 @@ import JoinFamily from '../JoinFamily';
 import CreateFamily from '../CreateFamily';
 import FamilyTaskDetail from '../Family_task_detail';
 import FamilyCheck from '../familycheck';
+import Notifications from '../Notifications';
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -332,6 +334,13 @@ const AppNavigator = () => {
           options={{ 
             title: '创建家庭',
             headerBackTitle: '返回',
+          }}
+        />
+        <Stack.Screen 
+          name="Notifications" 
+          component={Notifications}
+          options={{ 
+            headerShown: false
           }}
         />
       </Stack.Navigator>

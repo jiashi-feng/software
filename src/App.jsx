@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import { AuthProvider, useAuth } from './store/AuthContext';
 import { FamilyProvider, useFamily } from './store/FamilyContext';
+import { NotificationProvider } from './store/NotificationContext';
 
 // 用于同步认证和家庭状态的组件
 const AuthStateListener = () => {
@@ -41,10 +42,12 @@ const App = () => {
         <PaperProvider theme={theme}>
           <AuthProvider>
             <FamilyProvider>
-              <AuthStateListener />
-              <VirtualAICompanionProvider>
-                <AppNavigator />
-              </VirtualAICompanionProvider>
+              <NotificationProvider>
+                <AuthStateListener />
+                <VirtualAICompanionProvider>
+                  <AppNavigator />
+                </VirtualAICompanionProvider>
+              </NotificationProvider>
             </FamilyProvider>
           </AuthProvider>
         </PaperProvider>

@@ -1,13 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
-  Platform,
+  TouchableOpacity,
   Alert,
-  PermissionsAndroid,
-  Linking,
-  KeyboardAvoidingView,
 } from 'react-native';
 import {
   TextInput,
@@ -15,194 +12,44 @@ import {
   Text,
   Surface,
   Avatar,
-  useTheme,
-  HelperText,
-  ActivityIndicator,
-  Snackbar,
-  Chip,
+  Divider,
+  IconButton,
+  Portal,
+  Dialog,
+  RadioButton,
 } from 'react-native-paper';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { CommonImages } from './assets/images';
+import { useAuth } from './store/AuthContext';
+import LinearGradient from 'react-native-linear-gradient';
 
-// 常用姓氏和名字
-const commonSurnames = ['张', '王', '李', '赵', '陈', '刘', '杨', '黄', '周', '吴'];
-const commonNameChars = ['明', '华', '伟', '建', '文', '英', '丽', '芳', '强', '军', '平', '杰', '云', '燕', '国', '玲'];
+const generateUserId = () => {
+  // 生成一个8位数的随机用户ID，类似微信号
+  const randomPart = Math.floor(10000000 + Math.random() * 90000000);
+  return `u_${randomPart}`;
+};
 
 const PrivateInformation = ({ navigation }) => {
-  const [name, setName] = useState('');
-  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
-  const [nameSuggestions, setNameSuggestions] = useState([]);
-  const [age, setAge] = useState('');
-  const [ageError, setAgeError] = useState('');
-  const [ageTouched, setAgeTouched] = useState(false);
-  const [gender, setGender] = useState('');
-  const [avatar, setAvatar] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const theme = useTheme();
+  const { userInfo, updateUserInfo } = useAuth();
   
-  // 引用指向TextInput的ref
-  const ageInputRef = useRef(null);
-  const nameInputRef = useRef(null);
+  const [name, setName] = useState(userInfo?.name || '');
+  const [age, setAge] = useState(userInfo?.age?.toString() || '');
+  const [gender, setGender] = useState(userInfo?.gender || '');
+  const [userId, setUserId] = useState(userInfo?.userId || generateUserId());
+  const [avatar, setAvatar] = useState(typeof userInfo?.avatar === 'string' ? userInfo.avatar : null);
+  
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingAge, setIsEditingAge] = useState(false);
+  const [showGenderDialog, setShowGenderDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 验证年龄
-  const validateAge = (text) => {
-    const ageNum = parseInt(text);
-    if (!text) {
-      setAgeError('请输入年龄');
-      return false;
-    } else if (isNaN(ageNum)) {
-      setAgeError('请输入有效的数字');
-      return false;
-    } else if (ageNum < 0 || ageNum > 120) {
-      setAgeError('年龄必须在0-120岁之间');
-      return false;
+  useEffect(() => {
+    if (userInfo?.avatar && typeof userInfo.avatar === 'string') {
+      setAvatar(userInfo.avatar);
     }
-    setAgeError('');
-    return true;
-  };
+  }, [userInfo?.avatar]);
 
-  // 处理姓名输入
-  const handleNameChange = (text) => {
-    setName(text);
-    
-    // 如果输入的是拼音，显示姓名建议
-    const lastChar = text.charAt(text.length - 1);
-    if (/[a-zA-Z]/.test(lastChar)) {
-      setShowNameSuggestions(true);
-      
-      // 根据输入的拼音生成建议
-      const pinyin = text.toLowerCase();
-      let suggestions = [];
-      
-      if (pinyin.startsWith('z')) {
-        suggestions.push('张');
-      } else if (pinyin.startsWith('w')) {
-        suggestions.push('王');
-      } else if (pinyin.startsWith('l')) {
-        suggestions.push('李');
-      } else if (pinyin.startsWith('c')) {
-        suggestions.push('陈');
-      } else if (pinyin.startsWith('h')) {
-        suggestions.push('黄');
-      }
-      
-      // 添加常用名字字符
-      if (pinyin.includes('ming')) {
-        suggestions.push('明');
-      } else if (pinyin.includes('hua')) {
-        suggestions.push('华');
-      } else if (pinyin.includes('wen')) {
-        suggestions.push('文');
-      } else if (pinyin.includes('jian')) {
-        suggestions.push('建');
-      } else if (pinyin.includes('li')) {
-        suggestions.push('丽');
-      }
-      
-      setNameSuggestions(suggestions.length > 0 ? suggestions : commonNameChars.slice(0, 5));
-    } else {
-      setShowNameSuggestions(false);
-    }
-  };
-
-  // 选择名字建议
-  const selectNameSuggestion = (suggestion) => {
-    // 如果当前输入中有拼音，替换最后的拼音部分
-    const parts = name.split(' ');
-    
-    // 替换最后一个拼音或直接添加字符
-    if (parts.length > 0 && /[a-zA-Z]/.test(parts[parts.length - 1])) {
-      parts.pop();
-      setName([...parts, suggestion].join(''));
-    } else {
-      setName(name + suggestion);
-    }
-    
-    setShowNameSuggestions(false);
-    nameInputRef.current?.focus();
-  };
-
-  // 显示名字建议
-  const renderNameSuggestions = () => {
-    if (!showNameSuggestions) return null;
-    
-    return (
-      <View style={styles.suggestionContainer}>
-        <Text style={styles.suggestionTitle}>常用汉字：</Text>
-        <View style={styles.suggestionList}>
-          {nameSuggestions.map((char, index) => (
-            <Chip
-              key={index}
-              onPress={() => selectNameSuggestion(char)}
-              style={styles.suggestionChip}
-              textStyle={styles.suggestionChipText}
-            >
-              {char}
-            </Chip>
-          ))}
-        </View>
-        <View style={styles.suggestionList}>
-          {commonSurnames.slice(0, 5).map((surname, index) => (
-            <Chip
-              key={`surname-${index}`}
-              onPress={() => selectNameSuggestion(surname)}
-              style={styles.suggestionChip}
-              textStyle={styles.suggestionChipText}
-            >
-              {surname}
-            </Chip>
-          ))}
-        </View>
-      </View>
-    );
-  };
-
-  // 请求相册权限
-  const requestGalleryPermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-          {
-            title: '相册访问权限',
-            message: '需要访问您的相册以选择头像图片',
-            buttonNeutral: '稍后询问',
-            buttonNegative: '取消',
-            buttonPositive: '确定',
-          },
-        );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        console.warn(err);
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const handleImagePick = async () => {
-    const hasPermission = await requestGalleryPermission();
-    if (!hasPermission) {
-      Alert.alert(
-        '权限提示',
-        '需要相册访问权限才能选择头像图片',
-        [
-          { text: '取消', style: 'cancel' },
-          { 
-            text: '去设置', 
-            onPress: () => {
-              if (Platform.OS === 'android') {
-                // 打开应用设置页面
-                Linking.openSettings();
-              }
-            }
-          }
-        ]
-      );
-      return;
-    }
-
+  const handleImagePick = () => {
     launchImageLibrary({
       mediaType: 'photo',
       includeBase64: true,
@@ -215,235 +62,305 @@ const PrivateInformation = ({ navigation }) => {
         return;
       }
       if (response.assets && response.assets[0]) {
-        setAvatar(response.assets[0].uri);
+        const newAvatar = response.assets[0].uri;
+        setAvatar(newAvatar);
+        saveUserInfo({ avatar: newAvatar });
       }
     });
   };
 
-  const handleAgeChange = (text) => {
-    setAge(text);
-    if (ageTouched) {
-      validateAge(text);
+  const handleSaveName = () => {
+    if (!name.trim()) {
+      Alert.alert('提示', '姓名不能为空');
+      return;
+    }
+    
+    setIsEditingName(false);
+    saveUserInfo({ name });
+  };
+
+  const handleSaveAge = () => {
+    if (!age.trim()) {
+      Alert.alert('提示', '年龄不能为空');
+      return;
+    }
+    
+    const ageNum = parseInt(age);
+    if (isNaN(ageNum) || ageNum < 0 || ageNum > 120) {
+      Alert.alert('提示', '请输入有效的年龄（0-120岁）');
+      return;
+    }
+    
+    setIsEditingAge(false);
+    saveUserInfo({ age: ageNum });
+  };
+
+  const handleSaveGender = (selectedGender) => {
+    setGender(selectedGender);
+    setShowGenderDialog(false);
+    saveUserInfo({ gender: selectedGender });
+  };
+
+  const saveUserInfo = async (updatedInfo) => {
+    setIsLoading(true);
+    try {
+      await updateUserInfo({
+        ...updatedInfo,
+        userId: userId // 确保userId不会被修改
+      });
+      setIsLoading(false);
+    } catch (error) {
+      console.error('保存用户信息出错', error);
+      Alert.alert('错误', '保存信息失败，请重试');
+      setIsLoading(false);
     }
   };
 
-  const handleAgeFocus = () => {
-    setAgeTouched(true);
-    validateAge(age);
-  };
-
-  const handleSubmit = () => {
-    if (!name || !age || !gender) {
-      return;
+  const renderGenderText = () => {
+    switch (gender) {
+      case 'male':
+        return '男';
+      case 'female':
+        return '女';
+      default:
+        return '未设置';
     }
-    if (!validateAge(age)) {
-      return;
-    }
-
-    // 设置提交状态为true，显示加载指示器
-    setIsSubmitting(true);
-
-    // 模拟提交数据到服务器的过程
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSnackbarVisible(true);
-      
-      // 延迟导航，给用户时间看到成功消息
-      setTimeout(() => {
-        navigation.navigate('AbilityChoice');
-      }, 1000);
-    }, 1500);
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 0}
+    <LinearGradient
+      colors={['#E6E6FA', '#D8BFD8']}
+      style={styles.container}
     >
-      <ScrollView style={styles.container}>
-        <Surface style={styles.surface}>
-          <View style={styles.avatarContainer}>
-            <Avatar.Image
-              size={120}
-              source={avatar ? { uri: avatar } : CommonImages.avatar}
-              style={styles.avatar}
-            />
-            <Button
-              mode="outlined"
-              onPress={handleImagePick}
-              style={styles.avatarButton}
-            >
-              更换头像
-            </Button>
-          </View>
 
-          <View style={styles.formContainer}>
-            <View>
-              <TextInput
-                ref={nameInputRef}
-                label="姓名"
-                value={name}
-                onChangeText={handleNameChange}
-                mode="outlined"
-                style={styles.input}
-                placeholder="请输入您的姓名"
-                autoComplete="name"
-                autoCapitalize="none"
-                textContentType="name"
-                keyboardType="default"
-                clearButtonMode="while-editing"
-                returnKeyType="next"
-                blurOnSubmit={false}
-                onSubmitEditing={() => ageInputRef.current?.focus()}
-                right={name ? <TextInput.Icon name="close" onPress={() => setName('')} /> : null}
-              />
-              {renderNameSuggestions()}
-            </View>
-
-            <View>
-              <TextInput
-                ref={ageInputRef}
-                label="年龄"
-                value={age}
-                onChangeText={handleAgeChange}
-                onFocus={handleAgeFocus}
-                mode="outlined"
-                style={styles.input}
-                keyboardType="number-pad"
-                maxLength={3}
-                placeholder="请输入您的年龄（0-120岁）"
-                returnKeyType="done"
-                clearButtonMode="while-editing"
-                right={age ? <TextInput.Icon name="close" onPress={() => { 
-                  setAge(''); 
-                  if (ageTouched) validateAge('');
-                }} /> : null}
-                error={ageTouched && !!ageError}
-              />
-              {ageTouched && !!ageError && (
-                <HelperText type="error">{ageError}</HelperText>
-              )}
-            </View>
-
-            <View style={styles.genderContainer}>
-              <Text style={styles.label}>性别</Text>
-              <View style={styles.genderButtons}>
-                <Button
-                  mode={gender === 'male' ? 'contained' : 'outlined'}
-                  onPress={() => setGender('male')}
-                  style={styles.genderButton}
-                >
-                  男
-                </Button>
-                <Button
-                  mode={gender === 'female' ? 'contained' : 'outlined'}
-                  onPress={() => setGender('female')}
-                  style={styles.genderButton}
-                >
-                  女
-                </Button>
-              </View>
-            </View>
-
-            <Button
-              mode="contained"
-              onPress={handleSubmit}
-              style={styles.submitButton}
-              disabled={!name || !age || !gender || (ageTouched && !!ageError) || isSubmitting}
-              loading={isSubmitting}
-            >
-              {isSubmitting ? '提交中...' : '下一步'}
-            </Button>
-          </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Surface style={styles.avatarContainer}>
+          <Avatar.Image
+            size={130}
+            source={avatar && typeof avatar === 'string' ? { uri: avatar } : CommonImages.default_avatar}
+          />
+          <TouchableOpacity 
+            style={styles.changeAvatarButton}
+            onPress={handleImagePick}
+          >
+            <Text style={styles.changeAvatarText}>更换头像</Text>
+          </TouchableOpacity>
         </Surface>
 
-        <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
-          duration={2000}
-          style={styles.snackbar}
-        >
-          信息提交成功！
-        </Snackbar>
+        <Surface style={styles.infoContainer}>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>微信号</Text>
+            <View style={styles.infoValueContainer}>
+              <Text style={styles.infoValue}>{userId}</Text>
+              <Text style={styles.infoHint}>(不可修改)</Text>
+            </View>
+          </View>
+          
+          <Divider style={styles.divider} />
+          
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>姓名</Text>
+            {isEditingName ? (
+              <View style={styles.editContainer}>
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  mode="flat"
+                  style={styles.editInput}
+                  autoFocus
+                />
+                <View style={styles.editButtons}>
+                  <Button 
+                    mode="text" 
+                    onPress={() => {
+                      setName(userInfo?.name || '');
+                      setIsEditingName(false);
+                    }}
+                  >
+                    取消
+                  </Button>
+                  <Button 
+                    mode="contained"
+                    onPress={handleSaveName}
+                    loading={isLoading}
+                    disabled={isLoading}
+                  >
+                    保存
+                  </Button>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={styles.infoValueContainer}
+                onPress={() => setIsEditingName(true)}
+              >
+                <Text style={styles.infoValue}>{name || '未设置'}</Text>
+                <IconButton icon="chevron-right" size={20} />
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          <Divider style={styles.divider} />
+          
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>年龄</Text>
+            {isEditingAge ? (
+              <View style={styles.editContainer}>
+                <TextInput
+                  value={age}
+                  onChangeText={setAge}
+                  mode="flat"
+                  style={styles.editInput}
+                  keyboardType="number-pad"
+                  maxLength={3}
+                  autoFocus
+                />
+                <View style={styles.editButtons}>
+                  <Button 
+                    mode="text" 
+                    onPress={() => {
+                      setAge(userInfo?.age?.toString() || '');
+                      setIsEditingAge(false);
+                    }}
+                  >
+                    取消
+                  </Button>
+                  <Button 
+                    mode="contained"
+                    onPress={handleSaveAge}
+                    loading={isLoading}
+                    disabled={isLoading}
+                  >
+                    保存
+                  </Button>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={styles.infoValueContainer}
+                onPress={() => setIsEditingAge(true)}
+              >
+                <Text style={styles.infoValue}>{age ? `${age}岁` : '未设置'}</Text>
+                <IconButton icon="chevron-right" size={20} />
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          <Divider style={styles.divider} />
+          
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>性别</Text>
+            <TouchableOpacity 
+              style={styles.infoValueContainer}
+              onPress={() => setShowGenderDialog(true)}
+            >
+              <Text style={styles.infoValue}>{renderGenderText()}</Text>
+              <IconButton icon="chevron-right" size={20} />
+            </TouchableOpacity>
+          </View>
+        </Surface>
+        
+        <Text style={styles.privacyHint}>您的个人信息仅用于个性化服务，我们会严格保护您的隐私安全</Text>
       </ScrollView>
-    </KeyboardAvoidingView>
+      
+      {/* 性别选择对话框 */}
+      <Portal>
+        <Dialog
+          visible={showGenderDialog}
+          onDismiss={() => setShowGenderDialog(false)}
+          style={styles.dialog}
+        >
+          <Dialog.Title>选择性别</Dialog.Title>
+          <Dialog.Content>
+            <RadioButton.Group onValueChange={handleSaveGender} value={gender}>
+              <RadioButton.Item label="男" value="male" />
+              <RadioButton.Item label="女" value="female" />
+            </RadioButton.Group>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowGenderDialog(false)}>取消</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
-  surface: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 10,
-    elevation: 4,
+  scrollContent: {
+    padding: 20,
   },
   avatarContainer: {
     alignItems: 'center',
+    padding: 20,
+    borderRadius: 10,
     marginBottom: 20,
   },
-  avatar: {
-    backgroundColor: '#e0e0e0',
+  changeAvatarButton: {
+    marginTop: 15,
+    padding: 10,
   },
-  avatarButton: {
-    marginTop: 10,
-  },
-  formContainer: {
-    gap: 15,
-  },
-  input: {
-    backgroundColor: 'transparent',
-  },
-  genderContainer: {
-    marginTop: 10,
-  },
-  label: {
+  changeAvatarText: {
+    color: '#6200ee',
     fontSize: 16,
-    marginBottom: 8,
   },
-  genderButtons: {
+  infoContainer: {
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  infoItem: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
   },
-  genderButton: {
+  infoLabel: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  infoValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoValue: {
+    fontSize: 16,
+    color: '#555',
+  },
+  infoHint: {
+    fontSize: 12,
+    color: '#888',
+    marginLeft: 5,
+  },
+  editContainer: {
     flex: 1,
+    marginLeft: 20,
   },
-  suggestionContainer: {
-    marginTop: 5,
-    marginBottom: 5,
-    padding: 8,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  suggestionTitle: {
-    fontSize: 14,
-    marginBottom: 8,
-    color: '#666',
-  },
-  suggestionList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 8,
-  },
-  suggestionChip: {
-    margin: 4,
-    backgroundColor: '#fff',
-  },
-  suggestionChipText: {
+  editInput: {
+    backgroundColor: 'transparent',
     fontSize: 16,
   },
-  submitButton: {
-    marginTop: 20,
-    paddingVertical: 8,
+  editButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 5,
   },
-  snackbar: {
-    backgroundColor: '#4CAF50',
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  dialog: {
+    borderRadius: 15,
+  },
+  privacyHint: {
+    textAlign: 'center',
+    color: '#888',
+    fontSize: 12,
+    marginTop: 20,
+    marginBottom: 40,
   },
 });
 
