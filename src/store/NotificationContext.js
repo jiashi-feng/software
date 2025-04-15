@@ -1,27 +1,29 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from './AuthContext';
 
 // 创建通知上下文
 const NotificationContext = createContext();
 
-// 示例通知数据
-const defaultNotifications = [
-  {
-    id: '1',
-    title: '任务分配通知',
-    content: '已为你自动分配6个任务，请点击任务详情，查看任务。',
-    isRead: false,
-    createdAt: new Date().toISOString(),
-    type: 'task',
-    action: 'TaskDetail'
-  }
-];
+// 系统默认通知
+const systemNotification = {
+  id: 'system-task-assign',
+  title: '系统任务分配通知',
+  content: '已为你自动分配6个任务，请点击查看任务详情。',
+  isRead: false,
+  createdAt: new Date().toISOString(),
+  type: 'task',
+  category: 'task_assign',
+  action: 'TaskDetail'
+};
 
 // 通知状态提供者组件
 export const NotificationProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState(defaultNotifications);
-  const [hasUnread, setHasUnread] = useState(true);
+  const [notifications, setNotifications] = useState([]);
+  const [hasUnread, setHasUnread] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [hasAddedSystemNotification, setHasAddedSystemNotification] = useState(false);
+  const { isLoggedIn } = useAuth();
 
   // 从存储中加载通知状态
   useEffect(() => {
@@ -30,15 +32,17 @@ export const NotificationProvider = ({ children }) => {
         const notificationStateJSON = await AsyncStorage.getItem('notificationState');
         if (notificationStateJSON) {
           const notificationState = JSON.parse(notificationStateJSON);
-          setNotifications(notificationState.notifications || defaultNotifications);
+          setNotifications(notificationState.notifications || []);
           
           // 检查是否有未读消息
           const unreadExists = notificationState.notifications.some(notification => !notification.isRead);
           setHasUnread(unreadExists);
-        } else {
-          // 如果没有存储的通知，使用默认通知
-          setNotifications(defaultNotifications);
-          setHasUnread(true);
+
+          // 检查是否已经添加过系统通知
+          const hasSystem = notificationState.notifications.some(
+            notification => notification.id === 'system-task-assign'
+          );
+          setHasAddedSystemNotification(hasSystem);
         }
       } catch (error) {
         console.error('Error loading notification state', error);
@@ -49,6 +53,22 @@ export const NotificationProvider = ({ children }) => {
 
     loadNotificationState();
   }, []);
+
+  // 用户登录或注册后添加系统通知
+  useEffect(() => {
+    const addSystemNotificationAfterLogin = async () => {
+      if (isLoggedIn && !loading && !hasAddedSystemNotification) {
+        // 添加系统默认通知
+        const updatedNotifications = [systemNotification, ...notifications];
+        setNotifications(updatedNotifications);
+        setHasUnread(true);
+        setHasAddedSystemNotification(true);
+        await saveNotificationState(updatedNotifications);
+      }
+    };
+
+    addSystemNotificationAfterLogin();
+  }, [isLoggedIn, loading, hasAddedSystemNotification]);
 
   // 保存通知状态到存储
   const saveNotificationState = async (notifications) => {
@@ -127,7 +147,35 @@ export const NotificationProvider = ({ children }) => {
   const clearAllNotifications = async () => {
     setNotifications([]);
     setHasUnread(false);
+    setHasAddedSystemNotification(false);
     await saveNotificationState([]);
+    return true;
+  };
+
+  // 重置系统通知（用于测试）
+  const resetSystemNotification = async () => {
+    // 移除系统通知
+    const filteredNotifications = notifications.filter(
+      notification => notification.id !== 'system-task-assign'
+    );
+    
+    setHasAddedSystemNotification(false);
+    setNotifications(filteredNotifications);
+    await saveNotificationState(filteredNotifications);
+    
+    // 重新添加系统通知
+    const updatedNotifications = [
+      {
+        ...systemNotification,
+        createdAt: new Date().toISOString() // 更新时间戳
+      }, 
+      ...filteredNotifications
+    ];
+    
+    setNotifications(updatedNotifications);
+    setHasUnread(true);
+    setHasAddedSystemNotification(true);
+    await saveNotificationState(updatedNotifications);
     return true;
   };
 
@@ -141,7 +189,8 @@ export const NotificationProvider = ({ children }) => {
         markAsRead,
         markAllAsRead,
         deleteNotification,
-        clearAllNotifications
+        clearAllNotifications,
+        resetSystemNotification
       }}
     >
       {children}

@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   achievementIcon: {
-    backgroundColor: '#e53f63',
+    backgroundColor: '#b06fbf',
   },
   unlockedIcon: {
     backgroundColor: '#ab4c53',

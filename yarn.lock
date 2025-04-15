@@ -6058,6 +6058,16 @@ react-is@^19.0.0:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-19.1.0.tgz#805bce321546b7e14c084989c77022351bbdd11b"
   integrity sha512-Oe56aUPnkHyyDxxkvqtd7KkdQP5uIUfHxd5XTb3wE9d/kRnZLmKbDB0GWk919tdQ+mxxPtG6EAs6RMT6i1qtHg==
 
+react-native-confetti-cannon@^1.5.2:
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/react-native-confetti-cannon/-/react-native-confetti-cannon-1.5.2.tgz#ca1a05edd2a64b080ea8b6238c49277908e1f123"
+  integrity sha512-IZuWjlW7QsdxEGNnvpD6W+7iKCCQhnd5BvuNvMtirU7Nxm8WS2N6LPGMBz1ZYDuusG+GRZkoXXTNCdoAAGpCTg==
+
+react-native-confetti@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/react-native-confetti/-/react-native-confetti-0.1.0.tgz#9ec93c07f845de5ebeaed700043fd5218792b6f1"
+  integrity sha512-+cXJvnPXKc0i/eTQcuzcjrlfIxmn/xFw4UyuVKQOWNK6BfWABvO6Ms6Zp6ivF1E8Vxt2vJkzJlNyoBvMh9FxKA==
+
 react-native-dropdown-select-list@^2.0.5:
   version "2.0.5"
   resolved "https://registry.yarnpkg.com/react-native-dropdown-select-list/-/react-native-dropdown-select-list-2.0.5.tgz#3626b2bf9b9c5e157b02f60cf36174cde7550056"

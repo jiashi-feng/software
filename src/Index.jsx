@@ -13,6 +13,7 @@ import {
   Avatar,
   IconButton,
   Badge,
+  Card,
 } from 'react-native-paper';
 import { CommonImages, FamilyAvatars } from './assets/images';
 import LinearGradient from 'react-native-linear-gradient';
@@ -56,6 +57,15 @@ const Index = ({ navigation }) => {
     }
   }, [hasFamily, familyInfo]);
 
+  // 处理按钮点击，游客状态下跳转到登录页面
+  const handleButtonPress = (destination) => {
+    if (isLoggedIn) {
+      navigation.navigate(destination);
+    } else {
+      navigation.navigate('LogIn', { returnTo: destination });
+    }
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -66,15 +76,15 @@ const Index = ({ navigation }) => {
         <View style={styles.header}>
           <View style={styles.rightHeader}>
             <TouchableOpacity 
-              style={styles.headerButton}
-              onPress={() => navigation.navigate('Notifications')}
+              style={[styles.headerButton, !isLoggedIn && styles.guestButton]}
+              onPress={() => handleButtonPress('Notifications')}
               activeOpacity={0.7}
             >
               <View>
                 <IconButton
                   icon="bell"
                   size={24}
-                  iconColor="#333"
+                  iconColor={isLoggedIn ? "#333" : "#888"}
                   onPress={undefined}
                 />
                 {isLoggedIn && hasUnread && (
@@ -84,49 +94,49 @@ const Index = ({ navigation }) => {
                   />
                 )}
               </View>
-              <Text style={styles.buttonText}>消息</Text>
+              <Text style={[styles.buttonText, !isLoggedIn && styles.guestButtonText]}>消息</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.headerButton}
-              onPress={() => navigation.navigate('TaskDetail')}
+              style={[styles.headerButton, !isLoggedIn && styles.guestButton]}
+              onPress={() => handleButtonPress('TaskDetail')}
               activeOpacity={0.7}
             >
               <IconButton
                 icon="broom"
                 size={24}
-                iconColor="#333"
+                iconColor={isLoggedIn ? "#333" : "#888"}
                 onPress={undefined}
               />
-              <Text style={styles.buttonText}>任务</Text>
+              <Text style={[styles.buttonText, !isLoggedIn && styles.guestButtonText]}>任务</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={styles.headerButton}
-              onPress={() => navigation.navigate('JoinFamily')}
+              style={[styles.headerButton, !isLoggedIn && styles.guestButton]}
+              onPress={() => handleButtonPress('JoinFamily')}
               activeOpacity={0.7}
             >
               <IconButton
                 icon="account-multiple-plus"
                 size={24}
-                iconColor="#333"
+                iconColor={isLoggedIn ? "#333" : "#888"}
                 onPress={undefined}
               />
-              <Text style={styles.buttonText}>入驻家庭</Text>
+              <Text style={[styles.buttonText, !isLoggedIn && styles.guestButtonText]}>入驻家庭</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={styles.headerButton}
-              onPress={() => navigation.navigate('CreateFamily')}
+              style={[styles.headerButton, !isLoggedIn && styles.guestButton]}
+              onPress={() => handleButtonPress('CreateFamily')}
               activeOpacity={0.7}
             >
               <IconButton
                 icon="home-plus"
                 size={24}
-                iconColor="#333"
+                iconColor={isLoggedIn ? "#333" : "#888"}
                 onPress={undefined}
               />
-              <Text style={styles.buttonText}>创建家庭</Text>
+              <Text style={[styles.buttonText, !isLoggedIn && styles.guestButtonText]}>创建家庭</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -134,7 +144,8 @@ const Index = ({ navigation }) => {
         {/* 中间标题 */}
         <View style={styles.titleContainer}>
           <Text style={styles.mainTitle}>
-            {hasFamily ? `✨ ${familyInfo.name} ✨` : '✨ 请创建一个家庭 ✨'}
+            {!isLoggedIn ? '✨ 欢迎体验家庭助手 ✨' : 
+             (hasFamily ? `✨ ${familyInfo.name} ✨` : '✨ 请创建一个家庭 ✨')}
           </Text>
         </View>
 
@@ -145,10 +156,10 @@ const Index = ({ navigation }) => {
               <Text style={styles.loadingText}>加载中...</Text>
             </View>
           ) : (
-            hasFamily && selectedFamily ? (
+            hasFamily && selectedFamily && isLoggedIn ? (
               <TouchableOpacity 
                 style={styles.mainCard}
-                onPress={() => navigation.navigate('GroupChat')}
+                onPress={() => isLoggedIn ? navigation.navigate('GroupChat') : navigation.navigate('LogIn', { returnTo: 'GroupChat' })}
               >
                 <ImageBackground
                   source={selectedFamily.photo}
@@ -157,7 +168,7 @@ const Index = ({ navigation }) => {
                 >
                   <TouchableOpacity 
                     style={styles.startButton}
-                    onPress={() => navigation.navigate('GroupChat')}
+                    onPress={() => isLoggedIn ? navigation.navigate('GroupChat') : navigation.navigate('LogIn', { returnTo: 'GroupChat' })}
                   >
                     <Text style={styles.startButtonText}>开启互动</Text>
                   </TouchableOpacity>
@@ -176,22 +187,25 @@ const Index = ({ navigation }) => {
           )}
         </View>
 
-        {!hasFamily && !loading && (
-          <View style={styles.bottomPromptContainer}>
+        {/* 信息提示卡片 - 仅在游客状态下显示 */}
+        {!isLoggedIn && (
+          <View style={styles.promptContainer}>
             <ImageBackground
               source={CommonImages.word_style}
-              style={styles.promptBox}
-              imageStyle={styles.promptBoxBackground}
+              style={styles.promptBackground}
+              imageStyle={styles.promptBackgroundImage}
+              resizeMode="stretch"
             >
-              
-              <Text style={styles.bottomPromptText}>注重家庭互动、教育引导和智能辅助</Text>
-              <Text style={styles.bottomPromptText}>让琐碎的家务变成一种有价值的连接</Text>
+              <View style={styles.textContainer}> 
+                <Text style={styles.promptText}>注重家庭互动、教育引导和智能辅助</Text>
+                <Text style={styles.promptText}>让琐碎的家务变成一种有价值的连接</Text>
+              </View>
             </ImageBackground>
           </View>
         )}
 
         {/* 底部信息区域 */}
-        {hasFamily && selectedFamily && (
+        {hasFamily && selectedFamily && isLoggedIn && (
           <View style={styles.bottomSection}>
             <View style={styles.familyInfoContainer}>
               <Text style={styles.familyName}>
@@ -207,6 +221,15 @@ const Index = ({ navigation }) => {
                 {selectedFamily.quote || '一起创建温馨的家'}
               </Text>
             </View>
+          </View>
+        )}
+        
+        {/* 游客信息提示 */}
+        {!isLoggedIn && (
+          <View style={styles.guestHintContainer}>
+            <Text style={styles.guestHintText}>
+              您正在以游客身份浏览
+            </Text>
           </View>
         )}
       </LinearGradient>
@@ -237,6 +260,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 16,
   },
+  guestButton: {
+    opacity: 0.7,
+  },
   notificationBadge: {
     position: 'absolute',
     top: 5,
@@ -247,6 +273,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#333',
     marginTop: -8,
+  },
+  guestButtonText: {
+    color: '#888',
   },
   titleContainer: {
     alignItems: 'center',
@@ -261,7 +290,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cardContainer: {
-    flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -282,54 +310,6 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     color: '#666',
-  },
-  assistantTextContainer: {
-    width: '100%',
-    marginTop: 'auto',
-    alignItems: 'center',
-    paddingBottom: 30,
-  },
-  assistantText: {
-    color: 'white',
-    fontSize: 16,
-    textAlign: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 10,
-    borderRadius: 15,
-    overflow: 'hidden',
-    textShadowColor: 'rgba(0,0,0,0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 5,
-    maxWidth: '90%',
-    marginBottom: 20,
-  },
-  createButton: {
-    backgroundColor: '#9B7EDE',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
-  createButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  joinButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#9B7EDE',
-  },
-  joinButtonText: {
-    color: '#9B7EDE',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
   characterImage: {
     width: '100%',
@@ -353,74 +333,107 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  // 新的信息卡片样式
+  promptContainer: {
+    width: screenWidth - 40,
+    marginHorizontal: 20,
+    marginTop: 80,
+    borderRadius: 25,
+    overflow: 'hidden',
+    elevation: 4,
+  },
+  promptBackground: {
+    width: '100%',
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  promptBackgroundImage: {
+    borderRadius: 25,
+  },
+  butterflyImage: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    top: 5,
+    left: 5,
+    zIndex: 1,
+  },
+  textContainer: {
+    width: '80%',
+    alignItems: 'center',
+    marginTop: 60,
+    marginLeft: 40,
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+  },
+  promptText: {
+    fontSize: 14,
+    color: '#6200ee',
+    textAlign: 'center',
+    marginVertical: 4,
+    lineHeight: 22,
+    letterSpacing: 0.5,
+    fontWeight: '500',
+  },
   bottomSection: {
     marginTop: 'auto',
     paddingBottom: 40,
+    width: '100%',
+    alignItems: 'center',
   },
   familyInfoContainer: {
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    borderRadius: 15,
-    padding: 15,
-    margin: 20,
+    width: '90%',
+    alignItems: 'center',
+    paddingVertical: 15,
   },
   familyName: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 5,
+    textAlign: 'center',
+    color: '#4e1b6e',
+    textShadowColor: 'rgba(155, 126, 222, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
   familyRole: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 5,
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#4e1b6e',
+    marginVertical: 5,
+    textShadowColor: 'rgba(155, 126, 222, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
   familyDescription: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 5,
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#4e1b6e',
+    marginVertical: 5,
+    textShadowColor: 'rgba(155, 126, 222, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
   familyQuote: {
-    fontSize: 14,
+    fontSize: 16,
     fontStyle: 'italic',
-    color: '#666',
-  },
-  bottomPromptContainer: {
-    width: '100%',
-    padding: 20,
-    alignItems: 'center',
-    marginTop: 10,
-    marginLeft:15,
-    marginBottom: 100,
-  },
-  promptBox: {
-    width: '100%',
-    padding: 20,
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  promptBoxBackground: {
-    borderRadius: 15,
-    resizeMode: 'cover',
-  },
-  bottomPromptTitle: {
-    fontSize: 20,
-    color: '#9B7EDE',
-    fontWeight: 'bold',
-    marginBottom: 10,
     textAlign: 'center',
-    textShadowColor: 'rgba(255, 255, 255, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  bottomPromptText: {
-    fontSize: 15,
-    color: '#666',
-    textAlign: 'center',
+    color: '#4e1b6e',
     marginVertical: 5,
-    lineHeight: 22,
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(107, 75, 220, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowColor: 'rgba(155, 126, 222, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  guestHintContainer: {
+    marginTop: 20,
+    marginBottom: 30,
+    alignItems: 'center',
+  },
+  guestHintText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
 });
 

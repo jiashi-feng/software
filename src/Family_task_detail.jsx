@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Animated,
+  Text as RNText,
 } from 'react-native';
 import {
   Text,
@@ -15,6 +17,7 @@ import {
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 const FamilyTaskDetail = ({ navigation }) => {
   const [tasks, setTasks] = useState([
@@ -24,7 +27,8 @@ const FamilyTaskDetail = ({ navigation }) => {
       completed: false,
       points: 30,
       deadline: '今天 18:00',
-      assignee: '妈妈'
+      assignee: '妈妈',
+      animationValue: new Animated.Value(0),
     },
     { 
       id: 2, 
@@ -32,7 +36,8 @@ const FamilyTaskDetail = ({ navigation }) => {
       completed: false,
       points: 40,
       deadline: '今天 20:00',
-      assignee: '爸爸'
+      assignee: '爸爸',
+      animationValue: new Animated.Value(0),
     },
     { 
       id: 3, 
@@ -40,7 +45,8 @@ const FamilyTaskDetail = ({ navigation }) => {
       completed: false,
       points: 25,
       deadline: '明天 10:00',
-      assignee: '我'
+      assignee: '我',
+      animationValue: new Animated.Value(0),
     },
   ]);
   
@@ -48,13 +54,37 @@ const FamilyTaskDetail = ({ navigation }) => {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState(null);
   const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showSubtitle, setShowSubtitle] = useState(false);
+  const confettiRef = useRef(null);
 
   const familyMembers = ['爸爸', '妈妈', '我'];
 
   const handleTaskToggle = (taskId) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    ));
+    const updatedTasks = tasks.map(task => {
+      if (task.id === taskId) {
+        const newCompletedState = !task.completed;
+        if (newCompletedState) {
+          setShowConfetti(true);
+          setShowSubtitle(true);
+          Animated.timing(task.animationValue, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }).start(() => {
+            task.animationValue.setValue(0);
+          });
+
+          setTimeout(() => {
+            setShowSubtitle(false);
+          }, 3000);
+        }
+        return { ...task, completed: newCompletedState };
+      }
+      return task;
+    });
+
+    setTasks(updatedTasks);
   };
 
   const handleAddTask = () => {
@@ -67,7 +97,8 @@ const FamilyTaskDetail = ({ navigation }) => {
           completed: false,
           points: 20,
           deadline: '今天 20:00',
-          assignee: selectedAssignee
+          assignee: selectedAssignee,
+          animationValue: new Animated.Value(0),
         }
       ]);
       setNewTask('');
@@ -76,40 +107,74 @@ const FamilyTaskDetail = ({ navigation }) => {
     }
   };
 
-  const TaskItem = ({ task, onToggle }) => (
-    <View style={styles.taskItem}>
-      <View style={styles.taskMain}>
-        <TouchableOpacity
-          style={[styles.checkbox, task.completed && styles.checkboxChecked]}
-          onPress={() => onToggle(task.id)}
-        >
-          {task.completed && <Icon name="check" size={16} color="#FFF" />}
-        </TouchableOpacity>
-        <View style={styles.taskContent}>
-          <Text style={[styles.taskText, task.completed && styles.completedTaskText]}>
-            {task.content}
-          </Text>
-          <Text style={styles.assigneeText}>指派给：{task.assignee}</Text>
+  const TaskItem = ({ task, onToggle }) => {
+    const animatedStyle = {
+      opacity: task.animationValue,
+      transform: [{
+        scale: task.animationValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 1.2],
+        }),
+      }],
+    };
+
+    return (
+      <View style={styles.taskItem}>
+        <View style={styles.taskMain}>
+          <TouchableOpacity
+            style={[styles.checkbox, task.completed && styles.checkboxChecked]}
+            onPress={() => onToggle(task.id)}
+          >
+            {task.completed && <Icon name="check" size={16} color="#FFF" />}
+          </TouchableOpacity>
+          <View style={styles.taskContent}>
+            <Text style={[styles.taskText, task.completed && styles.completedTaskText]}>
+              {task.content}
+            </Text>
+            <Text style={styles.assigneeText}>指派给：{task.assignee}</Text>
+          </View>
+        </View>
+        {task.completed && (
+          <Animated.View style={[styles.completedMessage, animatedStyle]}>
+            <Text style={styles.completedText}>已完成</Text>
+          </Animated.View>
+        )}
+        <View style={styles.taskInfo}>
+          <View style={styles.pointsContainer}>
+            <Icon name="star" size={16} color="#FFC107" />
+            <Text style={styles.pointsText}>{task.points}</Text>
+          </View>
+          <View style={styles.deadlineContainer}>
+            <Icon name="clock-outline" size={16} color="#666" />
+            <Text style={styles.deadlineText}>{task.deadline}</Text>
+          </View>
         </View>
       </View>
-      <View style={styles.taskInfo}>
-        <View style={styles.pointsContainer}>
-          <Icon name="star" size={16} color="#FFC107" />
-          <Text style={styles.pointsText}>{task.points}</Text>
-        </View>
-        <View style={styles.deadlineContainer}>
-          <Icon name="clock-outline" size={16} color="#666" />
-          <Text style={styles.deadlineText}>{task.deadline}</Text>
-        </View>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <LinearGradient
       colors={['#E6E6FA', '#D8BFD8']}
       style={styles.container}
     >
+      {showConfetti && (
+        <View style={styles.confettiContainer}>
+          <ConfettiCannon
+            count={200}
+            origin={{ x: 0, y: 0 }}
+            ref={confettiRef}
+            onAnimationEnd={() => setShowConfetti(false)}
+          />
+        </View>
+      )}
+      {showSubtitle && (
+        <View style={styles.subtitleContainer}>
+          <RNText style={styles.subtitleText}>
+            已完成一项任务,离成功更近一步
+          </RNText>
+        </View>
+      )}
 
       <ScrollView style={styles.content}>
         <Surface style={styles.taskBox}>
@@ -337,6 +402,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#9B7EDE',
     borderRadius: 8,
     elevation: 2,
+  },
+  completedMessage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  completedText: {
+    fontSize: 14,
+    color: '#4CAF50',
+  },
+  confettiContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+  },
+  subtitleContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  subtitleText: {
+    fontSize: 18,
+    color: '#4CAF50',
+    textAlign: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 10,
+    borderRadius: 8,
   },
 });
 

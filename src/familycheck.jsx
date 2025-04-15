@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, FlatList, Modal, Button, ImageBackground } from 'react-native';
-import { CommonImages } from './assets/images';
+import { CommonImages ,FamilyAvatars} from './assets/images';
 
 const FamilyCard = ({ family }) => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -54,13 +54,13 @@ const FamilyList = () => {
       name: '家庭1',
       id: 'F001',
       members: ['Alice', 'Bob', 'Charlie', 'David'],
-      image: CommonImages.avatars,
+      image: FamilyAvatars.profile6,
     },
     {
       name: '家庭2',
       id: 'F002',
       members: ['Eve', 'Frank', 'Grace'],
-      image: CommonImages.avatarss,
+      image: FamilyAvatars.profile7,
     },
   ];
 
