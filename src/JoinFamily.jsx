@@ -7,9 +7,12 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
-import {CommonImages} from './assets/images';
+import { FamilyAvatars } from './assets/images';
 import LinearGradient from 'react-native-linear-gradient';
+import { useNotification } from './store/NotificationContext';
 
 // 模拟家庭数据
 const mockSearchResults = [
@@ -18,20 +21,22 @@ const mockSearchResults = [
     name: '快乐家庭',
     familyId: 'F001',
     memberCount: 4,
-    avatar:CommonImages.avatars,
+    avatar: FamilyAvatars.profile6,
   },
   {
     id: '2',
     name: '温暖之家',
     familyId: 'F002',
-    memberCount: 3,
-    avatar: CommonImages.avatarss,
+    memberCount: 3, 
+    avatar: FamilyAvatars.profile7,
   },
 ];
 
 const JoinFamily = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { addNotification } = useNotification();
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -43,10 +48,29 @@ const JoinFamily = ({ navigation }) => {
     }
   };
 
-  const handleJoinRequest = (familyId) => {
-    // 处理申请入驻逻辑
-    console.log('申请加入家庭:', familyId);
-    // TODO: 实现申请入驻的API调用
+  const handleJoinRequest = async (family) => {
+    setIsLoading(true);
+    try {
+      // 发送申请入驻通知
+      await addNotification({
+        title: '家庭入驻申请',
+        content: `您已申请加入"${family.name}"，请等待管理员审核。`,
+        category: 'family_request',
+        type: 'family',
+        action: 'FamilyCheck',
+        createdAt: new Date().toISOString(),
+      });
+
+      // 模拟网络延迟
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // 返回到主页
+      navigation.navigate('MainTabs');
+    } catch (error) {
+      console.error('申请失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderFamilyItem = ({ item }) => (
@@ -59,7 +83,8 @@ const JoinFamily = ({ navigation }) => {
       </View>
       <TouchableOpacity
         style={styles.joinButton}
-        onPress={() => handleJoinRequest(item.familyId)}
+        onPress={() => handleJoinRequest(item)}
+        disabled={isLoading}
       >
         <Text style={styles.joinButtonText}>申请入驻</Text>
       </TouchableOpacity>
@@ -86,6 +111,20 @@ const JoinFamily = ({ navigation }) => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
       />
+
+      {/* 申请中弹窗 */}
+      <Modal
+        transparent
+        visible={isLoading}
+        animationType="fade"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <ActivityIndicator size="large" color="#9B7EDE" />
+            <Text style={styles.loadingText}>申请提交中...</Text>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -150,8 +189,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  backButtonContainer: {
-    padding: 8,
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    elevation: 5,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
   },
 });
 

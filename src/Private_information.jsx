@@ -149,7 +149,7 @@ const PrivateInformation = ({ navigation }) => {
 
         <Surface style={styles.infoContainer}>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>微信号</Text>
+            <Text style={styles.infoLabel}>用户id</Text>
             <View style={styles.infoValueContainer}>
               <Text style={styles.infoValue}>{userId}</Text>
               <Text style={styles.infoHint}>(不可修改)</Text>

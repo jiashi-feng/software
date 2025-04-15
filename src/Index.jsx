@@ -178,7 +178,15 @@ const Index = ({ navigation }) => {
 
         {!hasFamily && !loading && (
           <View style={styles.bottomPromptContainer}>
-            <Text style={styles.bottomPromptText}>个性化智能管理小助手值得拥有</Text>
+            <ImageBackground
+              source={CommonImages.word_style}
+              style={styles.promptBox}
+              imageStyle={styles.promptBoxBackground}
+            >
+              
+              <Text style={styles.bottomPromptText}>注重家庭互动、教育引导和智能辅助</Text>
+              <Text style={styles.bottomPromptText}>让琐碎的家务变成一种有价值的连接</Text>
+            </ImageBackground>
           </View>
         )}
 
@@ -377,16 +385,42 @@ const styles = StyleSheet.create({
   },
   bottomPromptContainer: {
     width: '100%',
-    padding: 15,
+    padding: 20,
     alignItems: 'center',
-    marginTop: 15,
-    marginBottom: 200,
+    marginTop: 10,
+    marginLeft:15,
+    marginBottom: 100,
+  },
+  promptBox: {
+    width: '100%',
+    padding: 20,
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  promptBoxBackground: {
+    borderRadius: 15,
+    resizeMode: 'cover',
+  },
+  bottomPromptTitle: {
+    fontSize: 20,
+    color: '#9B7EDE',
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   bottomPromptText: {
-    fontSize: 16,
-    color: '#6200ee',
+    fontSize: 15,
+    color: '#666',
     textAlign: 'center',
-    fontWeight: '500',
+    marginVertical: 5,
+    lineHeight: 22,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(107, 75, 220, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });
 

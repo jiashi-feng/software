@@ -33,11 +33,11 @@ export const CommonImages = {
   logo: require('../common/logo.png'),
   placeholder: require('../common/placeholder.jpg'),
   avatar: require('../common/default_avatar.png'),
-  // 背景图片
-  headerBg: require('../common/header_bg.jpg'),
+  eating:require("../common/eating.jpg"),
   emptyBg: require('../common/empty_bg.png'),
-  // 登录页背景
+  word_style:require('../common/word_style.png'),
   background: require('../common/background.png'),
+  camping:require("../common/camping.png"),
   default_avatar:require("../common/default_avatar.png"),
   single:require("../common/single.png"),
   unlogin:require("../common/unlogin.png"),

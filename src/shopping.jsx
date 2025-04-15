@@ -106,10 +106,10 @@ const mockProducts = [
   },
   {
     id: '5',
-    name: '郊游券',
-    description: '和家人一起郊游一天',
+    name: '大餐券',
+    description: '和家人一起吃一顿丰盛大餐',
     points: 800,
-    image: CommonImages.a11,
+    image: CommonImages.eating,
     exchangeCount: 987,
     category: '800-1500小币'
   },
@@ -118,7 +118,7 @@ const mockProducts = [
     name: '露营券',
     description: '和家人一起体验露营的乐趣',
     points: 1000,
-    image: CommonImages.a6,
+    image: CommonImages.camping,
     exchangeCount: 876,
     category: '800-1500小币'
   },
