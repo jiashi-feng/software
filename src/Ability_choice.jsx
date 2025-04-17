@@ -26,10 +26,8 @@ import {
 } from 'react-native-paper';
 import CustomIcon from './components/CustomIcon';
 
-// 屏幕宽度
 const { width } = Dimensions.get('window');
 
-// 技能数据 - 分类整理
 const skillCategories = [
   {
     id: 'household',
@@ -81,7 +79,6 @@ const skillCategories = [
   }
 ];
 
-// 任务类型偏好
 const taskPreferences = [
   { id: 'routine', name: '日常例行任务', icon: 'repeat', description: '偏好有规律、周期性的任务' },
   { id: 'complex', name: '复杂性任务', icon: 'puzzle', description: '偏好需要解决问题的复杂任务' },
@@ -91,7 +88,6 @@ const taskPreferences = [
   { id: 'social', name: '社交型任务', icon: 'account-group', description: '偏好与人互动的任务' },
 ];
 
-// 更新时间偏好数据结构
 const timeSlots = [
   {
     id: 'early_morning',
@@ -131,7 +127,6 @@ const timeSlots = [
   },
 ];
 
-// 环境偏好数据
 const environmentPreferences = [
   { 
     id: 'noise',
@@ -163,7 +158,6 @@ const environmentPreferences = [
   },
 ];
 
-// 情感价值偏好数据
 const emotionalPreferences = [
   {
     id: 'achievement',
@@ -200,17 +194,17 @@ const emotionalPreferences = [
 const AbilityChoice = ({ navigation }) => {
   const theme = useTheme();
   
-  // 当前步骤
+  
   const [currentStep, setCurrentStep] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
   
-  // 选中的技能
+  
   const [selectedSkills, setSelectedSkills] = useState({});
   
-  // 任务类型偏好
+  
   const [taskTypePreferences, setTaskTypePreferences] = useState([]);
   
-  // 更新时间偏好状态管理
+  
   const [timePreferences, setTimePreferences] = useState(
     timeSlots.reduce((acc, slot) => {
       acc[slot.id] = slot.defaultStrength;
@@ -218,7 +212,7 @@ const AbilityChoice = ({ navigation }) => {
     }, {})
   );
   
-  // 环境偏好
+  
   const [environmentValues, setEnvironmentValues] = useState({
     noise: 3,
     space: 3,
@@ -226,20 +220,20 @@ const AbilityChoice = ({ navigation }) => {
     multitasking: 3
   });
   
-  // 当前技能类别
+  
   const [currentCategory, setCurrentCategory] = useState(skillCategories[0].id);
   
-  // 是否显示帮助模态框
+  
   const [helpModalVisible, setHelpModalVisible] = useState(false);
   
-  // 情感价值偏好
+  
   const [emotionalValuePreferences, setEmotionalValuePreferences] = useState([]);
   
-  // 进度条值
+  
   const steps = ['技能选择', '任务偏好', '时间偏好', '情感价值偏好', '环境偏好'];
   const progress = (currentStep + 1) / steps.length;
 
-  // 切换技能
+  
   const toggleSkill = (skillId) => {
     setSelectedSkills(prev => {
       const newSelection = { ...prev };
@@ -252,7 +246,7 @@ const AbilityChoice = ({ navigation }) => {
     });
   };
 
-  // 切换任务类型偏好
+  
   const toggleTaskPreference = (prefId) => {
     setTaskTypePreferences(prev => 
       prev.includes(prefId)
@@ -261,7 +255,7 @@ const AbilityChoice = ({ navigation }) => {
     );
   };
 
-  // 更新时间偏好处理函数
+  
   const handleTimePreferenceChange = (slotId, strength) => {
     setTimePreferences({
       ...timePreferences,
@@ -269,7 +263,7 @@ const AbilityChoice = ({ navigation }) => {
     });
   };
 
-  // 处理环境偏好变化
+  
   const handleEnvironmentChange = (prefId, value) => {
     setEnvironmentValues(prev => ({
       ...prev,
@@ -277,7 +271,7 @@ const AbilityChoice = ({ navigation }) => {
     }));
   };
 
-  // 切换情感价值偏好
+  
   const toggleEmotionalPreference = (prefId) => {
     setEmotionalValuePreferences(prev => 
       prev.includes(prefId)
@@ -286,7 +280,7 @@ const AbilityChoice = ({ navigation }) => {
     );
   };
 
-  // 下一步
+  
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -295,23 +289,23 @@ const AbilityChoice = ({ navigation }) => {
     }
   };
 
-  // 上一步
+  
   const handleBack = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
 
-  // 跳过当前步骤
+  
   const handleSkip = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     }
   };
 
-  // 提交
+  
   const handleSubmit = () => {
-    // 准备要提交的数据
+    
     const userData = {
       skills: Object.keys(selectedSkills),
       taskPreferences: taskTypePreferences,
@@ -320,13 +314,13 @@ const AbilityChoice = ({ navigation }) => {
       emotionalValuePreferences
     };
     
-    console.log('提交的用户数据:', userData);
     
-    // 导航到主应用界面
+    
+    
     navigation.navigate('MainTabs');
   };
 
-  // 渲染技能类别切换器
+  
   const renderCategoryTabs = () => (
     <View style={styles.categoryTabsWrapper}>
       <View style={styles.categoryTabsContainer}>
@@ -355,11 +349,11 @@ const AbilityChoice = ({ navigation }) => {
           ))}
         </ScrollView>
         
-        {/* 右侧阴影提示可滑动 */}
+        {}
         <View style={styles.tabShadowIndicator} />
       </View>
       
-      {/* 滑动指示器 */}
+      {}
       <View style={styles.scrollIndicator}>
         {skillCategories.map((category, index) => (
           <View 
@@ -374,7 +368,7 @@ const AbilityChoice = ({ navigation }) => {
     </View>
   );
 
-  // 渲染技能标签
+  
   const renderSkills = () => {
     const currentCategoryData = skillCategories.find(cat => cat.id === currentCategory);
     
@@ -412,7 +406,7 @@ const AbilityChoice = ({ navigation }) => {
     );
   };
 
-  // 渲染任务类型偏好
+  
   const renderTaskPreferences = () => (
     <View style={styles.preferencesSection}>
       <Title style={styles.sectionTitle}>任务类型偏好</Title>
@@ -449,7 +443,7 @@ const AbilityChoice = ({ navigation }) => {
     </View>
   );
 
-  // 更新渲染时间偏好函数
+  
   const renderTimePreferences = () => {
     return (
       <View style={styles.timePreferencesContainer}>
@@ -459,7 +453,7 @@ const AbilityChoice = ({ navigation }) => {
         </Text>
         
         <Surface style={styles.timeTable}>
-          {/* 表头 */}
+          {}
           <View style={styles.timeTableHeader}>
             <Text style={[styles.timeTableHeaderCell, styles.timeRangeCell]}>时间段</Text>
             <Text style={[styles.timeTableHeaderCell, styles.taskTypesCell]}>适合任务类型</Text>
@@ -468,7 +462,7 @@ const AbilityChoice = ({ navigation }) => {
           
           <Divider />
           
-          {/* 时间表行 */}
+          {}
           {timeSlots.map((slot) => (
             <View key={slot.id}>
               <View style={styles.timeTableRow}>
@@ -481,7 +475,7 @@ const AbilityChoice = ({ navigation }) => {
                 </View>
                 
                 <View style={[styles.timeTableCell, styles.strengthCell]}>
-                  {/* 星级评分 */}
+                  {}
                   <View style={styles.starsContainer}>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <IconButton
@@ -511,7 +505,7 @@ const AbilityChoice = ({ navigation }) => {
     );
   };
 
-  // 渲染情感价值偏好
+  
   const renderEmotionalPreferences = () => (
     <View style={styles.preferencesSection}>
       <Title style={styles.sectionTitle}>情感价值偏好</Title>
@@ -551,7 +545,7 @@ const AbilityChoice = ({ navigation }) => {
     </View>
   );
 
-  // 渲染环境偏好
+  
   const renderEnvironmentPreferences = () => (
     <View style={styles.preferencesSection}>
       <Title style={styles.sectionTitle}>环境偏好</Title>
@@ -615,7 +609,7 @@ const AbilityChoice = ({ navigation }) => {
               <Text style={styles.environmentPreferenceMax}>{pref.max}</Text>
             </View>
             
-            {/* 添加分隔线 */}
+            {}
             {pref.id !== environmentPreferences[environmentPreferences.length - 1].id && (
               <Divider style={styles.environmentPreferenceDivider} />
             )}
@@ -625,7 +619,7 @@ const AbilityChoice = ({ navigation }) => {
     </View>
   );
 
-  // 渲染当前步骤内容
+  
   const renderStepContent = () => {
     switch(currentStep) {
       case 0:
@@ -648,7 +642,7 @@ const AbilityChoice = ({ navigation }) => {
     }
   };
 
-  // 渲染帮助信息模态框
+  
   const renderHelpModal = () => (
     <Portal>
       <Modal
@@ -678,7 +672,7 @@ const AbilityChoice = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* 顶部进度条和导航 */}
+      {}
       <Surface style={styles.header}>
         <View style={styles.progressContainer}>
           <Text style={styles.stepText}>步骤 {currentStep + 1}/{steps.length}: {steps[currentStep]}</Text>
@@ -692,12 +686,12 @@ const AbilityChoice = ({ navigation }) => {
         />
       </Surface>
       
-      {/* 主内容区 */}
+      {}
       <ScrollView style={styles.content}>
         {renderStepContent()}
       </ScrollView>
       
-      {/* 底部按钮区 */}
+      {}
       <Surface style={styles.footer}>
         {currentStep > 0 && (
           <Button
@@ -730,7 +724,7 @@ const AbilityChoice = ({ navigation }) => {
         </View>
       </Surface>
       
-      {/* 帮助模态框 */}
+      {}
       {renderHelpModal()}
     </View>
   );

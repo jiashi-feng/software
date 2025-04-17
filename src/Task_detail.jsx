@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   },
   taskInfo: {
     flexDirection: 'row',
-    marginLeft: 36, // 与任务内容对齐
+    marginLeft: 36, 
   },
   pointsContainer: {
     flexDirection: 'row',

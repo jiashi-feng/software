@@ -7,7 +7,6 @@ import CustomIcon from '../components/CustomIcon';
 import { useVirtualAICompanion } from '../components/VirtualAICompanionProvider';
 import { AICompanionNavigationEvents } from '../components/VirtualAICompanion';
 
-// 导入所有页面
 import LogIn from '../Log_in';
 import Register from '../Register';
 import PrivateInformation from '../Private_information';
@@ -42,17 +41,17 @@ const MainTabs = () => {
   const theme = useTheme();
   const { setScreenName } = useVirtualAICompanion();
 
-  // 监听标签切换
+  
   const handleTabChange = (e) => {
     try {
       const index = e.data.state.index;
       const routes = ['Home', 'Community', 'Shopping', 'PersonCenter'];
       if (index >= 0 && index < routes.length) {
-        console.log(`切换到标签页: ${routes[index]}`);
+        
         setScreenName(routes[index]);
       }
     } catch (error) {
-      console.error('处理标签切换错误:', error);
+      
     }
   };
 
@@ -120,12 +119,12 @@ const AppNavigator = () => {
   const navigationRef = useRef(null);
   const initialMainTabsLoad = useRef(true);
 
-  // 设置导航事件监听
+  
   useEffect(() => {
-    // 监听AI助手发出的导航事件
+    
     const unsubscribe = AICompanionNavigationEvents.addListener((screenName, params) => {
       if (navigationRef.current && screenName) {
-        console.log(`AI助手请求导航到: ${screenName}`, params);
+        
         navigationRef.current.navigate(screenName, params);
       }
     });
@@ -133,25 +132,24 @@ const AppNavigator = () => {
     return unsubscribe;
   }, []);
 
-  // 监听导航状态变化
+  
   const handleNavigationStateChange = (state) => {
     try {
       if (state?.routes?.length > 0) {
         const currentRoute = state.routes[state.index];
         const currentRouteName = currentRoute.name;
         
-        // 如果是MainTabs，检查当前激活的标签页
+        
         if (currentRouteName === 'MainTabs' && currentRoute.state?.routes?.length > 0) {
           const tabIndex = currentRoute.state.index || 0;
           const tabRoutes = ['Home', 'Community', 'Shopping', 'PersonCenter'];
           if (tabIndex >= 0 && tabIndex < tabRoutes.length) {
-            console.log(`设置屏幕名称: ${tabRoutes[tabIndex]} (从MainTabs)`);
             setScreenName(tabRoutes[tabIndex]);
             
-            // 只在第一次进入MainTabs时显示AI助手
+            
             if (initialMainTabsLoad.current) {
               initialMainTabsLoad.current = false;
-              // 延迟显示AI助手，确保页面已完全加载
+              
               setTimeout(() => {
                 showCompanion();
               }, 1000);
@@ -161,12 +159,12 @@ const AppNavigator = () => {
           }
         }
         
-        // 不是MainTabs或无法获取标签信息，使用当前路由名称
-        console.log(`设置屏幕名称: ${currentRouteName}`);
+        
+        
         setScreenName(currentRouteName);
       }
     } catch (error) {
-      console.error('处理导航状态变化错误:', error);
+      
     }
   };
 

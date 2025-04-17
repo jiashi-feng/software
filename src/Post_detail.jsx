@@ -31,7 +31,7 @@ const PostDetail = ({ route, navigation }) => {
   ]);
   const theme = useTheme();
 
-  // 模拟帖子数据
+  
   const post = {
     id: postId,
     title: '如何高效清洁厨房？',

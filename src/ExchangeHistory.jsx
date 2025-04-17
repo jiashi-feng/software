@@ -21,7 +21,6 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ProductImages, CommonImages } from './assets/images';
 
-// 定义颜色主题
 const COLORS = {
   primary: '#4A6FA5',
   accent: '#FF6B6B',
@@ -36,14 +35,12 @@ const COLORS = {
   info: '#2196F3',
 };
 
-// 订单状态图标
 const ORDER_STATUS_ICONS = {
   '待发货': { icon: 'clock-time-four', color: COLORS.warning },
   '已发货': { icon: 'truck-delivery', color: COLORS.info },
   '已完成': { icon: 'check-circle', color: COLORS.success },
 };
 
-// 模拟兑换记录数据
 const mockRecords = [
   {
     id: '1',
@@ -105,7 +102,7 @@ const ExchangeHistory = () => {
 
   const statusFilters = ['全部', '待发货', '已发货', '已完成'];
 
-  // 过滤记录
+  
   const filteredRecords = mockRecords.filter(record => {
     const matchesStatus = selectedStatus === '全部' || record.status === selectedStatus;
     const matchesSearch = !searchQuery || 
@@ -124,9 +121,9 @@ const ExchangeHistory = () => {
   };
 
   const confirmReceived = () => {
-    // 在实际应用中，这里应该发送API请求
+    
     setDialogVisible(false);
-    // 模拟状态更新
+    
     setTimeout(() => {
       alert('已确认收货');
     }, 500);
@@ -279,7 +276,7 @@ const ExchangeHistory = () => {
         )}
       </ScrollView>
 
-      {/* 确认收货对话框 */}
+      {}
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>确认收货</Dialog.Title>
@@ -298,7 +295,7 @@ const ExchangeHistory = () => {
         </Dialog>
       </Portal>
 
-      {/* 查看物流对话框 */}
+      {}
       <Portal>
         <Dialog visible={logisticsDialogVisible} onDismiss={() => setLogisticsDialogVisible(false)}>
           <Dialog.Title>物流详情</Dialog.Title>
@@ -335,7 +332,7 @@ const ExchangeHistory = () => {
                 
                 <Divider style={styles.logisticsDivider} />
                 
-                {/* 模拟物流追踪信息 */}
+                {}
                 <View style={styles.trackingInfo}>
                   <Text style={styles.trackingTitle}>物流追踪</Text>
                   

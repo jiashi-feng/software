@@ -89,7 +89,7 @@ const SpecialScenarios = ({ navigation }) => {
       </Surface>
 
       <Surface style={styles.tableContainer}>
-        {/* 表头 */}
+        {}
         <View style={styles.tableHeaderRow}>
           <Text style={[styles.tableHeaderCell, styles.scenarioCell]}>情境类型</Text>
           <Text style={[styles.tableHeaderCell, styles.adjustmentCell]}>偏好调整规则</Text>
@@ -98,7 +98,7 @@ const SpecialScenarios = ({ navigation }) => {
         
         <Divider />
         
-        {/* 表格内容 */}
+        {}
         {scenarios.map((scenario) => (
           <View key={scenario.id}>
             <View style={styles.tableRow}>

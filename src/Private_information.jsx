@@ -24,7 +24,7 @@ import { useAuth } from './store/AuthContext';
 import LinearGradient from 'react-native-linear-gradient';
 
 const generateUserId = () => {
-  // 生成一个8位数的随机用户ID，类似微信号
+  
   const randomPart = Math.floor(10000000 + Math.random() * 90000000);
   return `u_${randomPart}`;
 };
@@ -106,11 +106,11 @@ const PrivateInformation = ({ navigation }) => {
     try {
       await updateUserInfo({
         ...updatedInfo,
-        userId: userId // 确保userId不会被修改
+        userId: userId 
       });
       setIsLoading(false);
     } catch (error) {
-      console.error('保存用户信息出错', error);
+      
       Alert.alert('错误', '保存信息失败，请重试');
       setIsLoading(false);
     }
@@ -263,7 +263,7 @@ const PrivateInformation = ({ navigation }) => {
         <Text style={styles.privacyHint}>您的个人信息仅用于个性化服务，我们会严格保护您的隐私安全</Text>
       </ScrollView>
       
-      {/* 性别选择对话框 */}
+      {}
       <Portal>
         <Dialog
           visible={showGenderDialog}

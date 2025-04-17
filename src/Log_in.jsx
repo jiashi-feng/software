@@ -40,10 +40,10 @@ const LogIn = ({ navigation }) => {
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const theme = useTheme();
   
-  // 动画值
+  
   const slideAnimation = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
-  // 邮箱验证
+  
   const validateEmail = (text) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!text) {
@@ -57,7 +57,7 @@ const LogIn = ({ navigation }) => {
     return true;
   };
 
-  // 密码验证
+  
   const validatePassword = (text) => {
     const hasLetter = /[a-zA-Z]/.test(text);
     const hasNumber = /[0-9]/.test(text);
@@ -76,16 +76,16 @@ const LogIn = ({ navigation }) => {
     return true;
   };
 
-  // 表单验证
+  
   useEffect(() => {
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
     setIsFormValid(isEmailValid && isPasswordValid);
   }, [email, password]);
 
-  // 页面加载时自动显示登录弹窗，带动画效果
+  
   useEffect(() => {
-    // 延迟1秒显示弹窗，并附带动画效果
+    
     const timer = setTimeout(() => {
       setLoginModalVisible(true);
       Animated.timing(slideAnimation, {
@@ -124,21 +124,21 @@ const LogIn = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (isFormValid) {
-      // 使用AuthContext的login方法进行登录
+      
       await login({ email });
       
-      // 导航到主页
+      
       navigation.replace('MainTabs');
     }
   };
 
   const handleGuest = () => {
-    // 游客访问，直接进入主页
+    
     navigation.replace('MainTabs');
   };
 
   const handleStartRegister = () => {
-    // 跳转到注册页面
+    
     hideLoginModal();
     navigation.navigate('Register');
   };
@@ -163,13 +163,13 @@ const LogIn = ({ navigation }) => {
   };
 
   const handleThirdPartyLogin = async (platform) => {
-    // 模拟第三方登录
+    
     await login({ provider: platform });
     
-    // 隐藏登录模态框
+    
     hideLoginModal();
     
-    // 导航到主页
+    
     navigation.replace('MainTabs');
   };
 
@@ -208,7 +208,7 @@ const LogIn = ({ navigation }) => {
         {
           transform: [{ translateY: slideAnimation }],
           top: '50%',
-          marginTop: -200, // 调整这个值可以改变弹窗的垂直位置
+          marginTop: -200, 
         },
       ]}
     >

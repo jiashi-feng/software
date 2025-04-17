@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 12,
     elevation: 2,
-    width: width - 24, // 考虑屏幕宽度减去左右边距
+    width: width - 24, 
   },
   achievementHeader: {
     flexDirection: 'row',
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 13,
     color: '#f1a7d6',
-    width: 40, // 固定宽度
+    width: 40, 
     textAlign: 'right',
   },
   pointsContainer: {

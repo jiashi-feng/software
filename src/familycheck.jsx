@@ -21,7 +21,7 @@ const FamilyCard = ({ family }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Modal for displaying family members */}
+      {}
       <Modal
         animationType="slide"
         transparent={true}
@@ -30,9 +30,9 @@ const FamilyCard = ({ family }) => {
       >
         <View style={styles.modalBackground}>
           <ImageBackground 
-            source={CommonImages.tanchuangBg} // 图片路径
+            source={CommonImages.tanchuangBg} 
             style={styles.modalView}
-            imageStyle={{ borderRadius: 20 }} // 圆角
+            imageStyle={{ borderRadius: 20 }} 
           >
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>家庭成员</Text>
@@ -79,7 +79,7 @@ const FamilyList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ede9fe', // 整体背景颜色
+    backgroundColor: '#ede9fe', 
   },
   familyList: {
     padding: 20,
@@ -87,13 +87,13 @@ const styles = StyleSheet.create({
   familyCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f5ff', // 浅紫色背景
-    borderColor: '#c4b5fd', // 淡紫色边框
+    backgroundColor: '#f9f5ff', 
+    borderColor: '#c4b5fd', 
     borderWidth: 1,
     borderRadius: 10,
     padding: 15,
     marginBottom: 20,
-    shadowColor: '#8b5cf6', // 柔和紫色阴影
+    shadowColor: '#8b5cf6', 
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 2,
-    borderColor: '#8b5cf6', // 紫色光晕
+    borderColor: '#8b5cf6', 
     marginRight: 10,
   },
   familyInfo: {
@@ -112,17 +112,17 @@ const styles = StyleSheet.create({
   familyName: {
     fontWeight: 'bold',
     fontSize: 16,
-    color: '#5b21b6', // 深紫色
+    color: '#5b21b6', 
   },
   button: {
-    backgroundColor: '#d6bcf7', // 深一点的淡紫色
+    backgroundColor: '#d6bcf7', 
     borderRadius: 20,
     paddingVertical: 5,
     paddingHorizontal: 10,
     marginTop: 5,
   },
   buttonText: {
-    color: 'white', // 按钮文字颜色
+    color: 'white', 
     letterSpacing: 0.5,
   },
   modalBackground: {
@@ -132,28 +132,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalView: {
-    width: '90%', // 弹窗宽度
-    height: '50%', // 弹窗高度
+    width: '90%', 
+    height: '50%', 
     marginRight: -20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
     flex: 1,
-    justifyContent: 'flex-start', // 将内容向上对齐
-    alignItems: 'flex-start', // 将内容左对齐
+    justifyContent: 'flex-start', 
+    alignItems: 'flex-start', 
     padding: 20,
-    paddingRight: 30, // 增加右侧间距
+    paddingRight: 30, 
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10, // 减少底部间距
-    color: '#5b21b6', // 深紫色
+    marginBottom: 10, 
+    color: '#5b21b6', 
   },
   memberText: {
     fontSize: 16,
-    color: '#6b7280', // 中性灰紫色
+    color: '#6b7280', 
   },
 });
 

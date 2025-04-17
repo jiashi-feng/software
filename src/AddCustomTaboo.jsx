@@ -48,8 +48,8 @@ const AddCustomTaboo = ({ navigation }) => {
   const [selectedMechanism, setSelectedMechanism] = useState('自动屏蔽');
 
   const handleSave = () => {
-    // 这里应该保存自定义禁忌规则到存储中
-    // 实际项目中可能需要与后端API交互或保存到本地存储
+    
+    
     navigation.goBack();
   };
 

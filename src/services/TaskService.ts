@@ -1,6 +1,5 @@
 import { Task } from '../types/Task';
 
-// 模拟的任务数据
 const initialTasks: Task[] = [
   { id: '1', title: '洗碗', completed: false, dueDate: new Date(), priority: 'medium' },
   { id: '2', title: '扫地', completed: false, dueDate: new Date(), priority: 'high' },

@@ -79,14 +79,14 @@ const PersonCenter = ({ navigation }) => {
     },
   ];
 
-  // 点击头像或用户信息区域跳转到登录页面
+  
   const handleUserInfoPress = () => {
     if (!isLoggedIn) {
       navigation.navigate('LogIn');
     }
   };
 
-  // 处理退出登录
+  
   const handleLogout = async () => {
     Alert.alert(
       '退出登录',
@@ -100,7 +100,7 @@ const PersonCenter = ({ navigation }) => {
           text: '确定',
           onPress: async () => {
             await logout();
-            // 退出登录后回到首页
+            
             navigation.navigate('MainTabs', { screen: 'Index' });
           }
         }

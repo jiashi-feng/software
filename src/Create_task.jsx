@@ -26,7 +26,7 @@ const CreateTask = ({ navigation }) => {
   const [assignee, setAssignee] = useState(null);
   const theme = useTheme();
 
-  // 模拟家庭成员数据
+  
   const familyMembers = [
     {
       id: 1,
@@ -46,9 +46,9 @@ const CreateTask = ({ navigation }) => {
   ];
 
   const handleSubmit = () => {
-    // 创建新任务对象
+    
     const newTask = {
-      id: Date.now().toString(), // 临时ID
+      id: Date.now().toString(), 
       title,
       description,
       points: parseInt(points),
@@ -60,7 +60,7 @@ const CreateTask = ({ navigation }) => {
       comments: [],
     };
 
-    // 使用导航参数返回新任务数据，而不是回调函数
+    
     navigation.navigate('MainTabs', { 
       screen: 'Home', 
       params: { newTask } 

@@ -2,10 +2,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonImages } from '../assets/images';
 
-// 创建家庭上下文
 const FamilyContext = createContext();
 
-// 默认家庭信息
 const defaultFamily = {
   id: null,
   name: '',
@@ -16,13 +14,12 @@ const defaultFamily = {
   members: []
 };
 
-// 家庭状态提供者组件
 export const FamilyProvider = ({ children }) => {
   const [hasFamily, setHasFamily] = useState(false);
   const [familyInfo, setFamilyInfo] = useState(defaultFamily);
   const [loading, setLoading] = useState(true);
 
-  // 从存储中加载家庭状态
+  
   useEffect(() => {
     const loadFamilyState = async () => {
       try {
@@ -33,7 +30,7 @@ export const FamilyProvider = ({ children }) => {
           setFamilyInfo(familyState.familyInfo || defaultFamily);
         }
       } catch (error) {
-        console.error('Error loading family state', error);
+        
       } finally {
         setLoading(false);
       }
@@ -42,23 +39,23 @@ export const FamilyProvider = ({ children }) => {
     loadFamilyState();
   }, []);
 
-  // 保存家庭状态到存储
+  
   const saveFamilyState = async (hasFamily, familyInfo) => {
     try {
       const familyState = { hasFamily, familyInfo };
       await AsyncStorage.setItem('familyState', JSON.stringify(familyState));
     } catch (error) {
-      console.error('Error saving family state', error);
+      
     }
   };
 
-  // 创建家庭
+  
   const createFamily = async (familyData) => {
     const newFamilyInfo = { 
       ...defaultFamily, 
       ...familyData,
-      id: Date.now().toString(), // 使用时间戳生成唯一ID
-      role: '管理员' // 创建者默认为管理员
+      id: Date.now().toString(), 
+      role: '管理员' 
     };
     setHasFamily(true);
     setFamilyInfo(newFamilyInfo);
@@ -66,7 +63,7 @@ export const FamilyProvider = ({ children }) => {
     return newFamilyInfo;
   };
 
-  // 加入家庭
+  
   const joinFamily = async (familyData) => {
     setHasFamily(true);
     setFamilyInfo({...defaultFamily, ...familyData, role: '成员'});
@@ -74,7 +71,7 @@ export const FamilyProvider = ({ children }) => {
     return true;
   };
 
-  // 退出家庭
+  
   const leaveFamily = async () => {
     setHasFamily(false);
     setFamilyInfo(defaultFamily);
@@ -82,7 +79,7 @@ export const FamilyProvider = ({ children }) => {
     return true;
   };
 
-  // 更新家庭信息
+  
   const updateFamilyInfo = async (newFamilyInfo) => {
     const updatedFamilyInfo = { ...familyInfo, ...newFamilyInfo };
     setFamilyInfo(updatedFamilyInfo);
@@ -106,7 +103,6 @@ export const FamilyProvider = ({ children }) => {
   );
 };
 
-// 自定义钩子，方便在组件中使用家庭上下文
 export const useFamily = () => useContext(FamilyContext);
 
 export default FamilyContext; 

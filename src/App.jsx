@@ -10,22 +10,20 @@ import { AuthProvider, useAuth } from './store/AuthContext';
 import { FamilyProvider, useFamily } from './store/FamilyContext';
 import { NotificationProvider } from './store/NotificationContext';
 
-// 用于同步认证和家庭状态的组件
 const AuthStateListener = () => {
   const { isLoggedIn } = useAuth();
   const { leaveFamily, hasFamily } = useFamily();
 
-  // 监听登录状态变化，当用户登出时重置家庭状态
+  
   useEffect(() => {
     if (!isLoggedIn && hasFamily) {
       leaveFamily();
     }
   }, [isLoggedIn]);
 
-  return null; // 这是一个功能性组件，不需要渲染UI
+  return null; 
 };
 
-// 定义应用的默认主题
 const theme = {
   ...DefaultTheme,
   colors: {

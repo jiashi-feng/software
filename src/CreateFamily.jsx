@@ -23,7 +23,7 @@ const CreateFamily = ({ navigation }) => {
   const [avatarSource, setAvatarSource] = useState(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
-  // 默认头像列表
+  
   const defaultAvatars = [
     { key: 'profile1', source: FamilyAvatars.profile1 },
     { key: 'profile2', source: FamilyAvatars.profile2 },
@@ -85,7 +85,7 @@ const CreateFamily = ({ navigation }) => {
       await createFamily(newFamily);
       navigation.navigate('MainTabs');
     } catch (error) {
-      console.error('创建家庭失败', error);
+      
       Alert.alert('错误', '创建家庭失败，请重试');
     }
   };
@@ -129,7 +129,7 @@ const CreateFamily = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* 头像选择模态框 */}
+      {}
       <Modal
         visible={showAvatarModal}
         transparent

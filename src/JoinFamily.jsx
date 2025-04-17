@@ -14,7 +14,6 @@ import { FamilyAvatars } from './assets/images';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNotification } from './store/NotificationContext';
 
-// 模拟家庭数据
 const mockSearchResults = [
   {
     id: '1',
@@ -40,7 +39,7 @@ const JoinFamily = ({ navigation }) => {
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    // 模拟搜索结果
+    
     if (query.trim()) {
       setSearchResults(mockSearchResults);
     } else {
@@ -51,7 +50,7 @@ const JoinFamily = ({ navigation }) => {
   const handleJoinRequest = async (family) => {
     setIsLoading(true);
     try {
-      // 发送申请入驻通知
+      
       await addNotification({
         title: '家庭入驻申请',
         content: `您已申请加入"${family.name}"，请等待管理员审核。`,
@@ -61,13 +60,13 @@ const JoinFamily = ({ navigation }) => {
         createdAt: new Date().toISOString(),
       });
 
-      // 模拟网络延迟
+      
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // 返回到主页
+      
       navigation.navigate('MainTabs');
     } catch (error) {
-      console.error('申请失败:', error);
+      
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +111,7 @@ const JoinFamily = ({ navigation }) => {
         contentContainerStyle={styles.listContainer}
       />
 
-      {/* 申请中弹窗 */}
+      {}
       <Modal
         transparent
         visible={isLoading}

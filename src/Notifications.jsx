@@ -24,7 +24,6 @@ const CATEGORIES = {
   FAMILY_REQUEST: '家庭申请',
 };
 
-// 添加分类标识符常量
 const CATEGORY_KEYS = {
   TASK_ASSIGN: 'task_assign',
   TASK_DEADLINE: 'task_deadline',
@@ -45,13 +44,13 @@ const Notifications = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
-    // 进入通知页面时，标记所有通知为已读
+    
     markAllAsRead();
   }, []);
 
   const filteredNotifications = selectedCategory
     ? notifications.filter(notification => {
-        // 根据标题自动判断分类
+        
         const title = notification.title?.toLowerCase() || '';
         const content = notification.content?.toLowerCase() || '';
         
@@ -82,7 +81,7 @@ const Notifications = ({ navigation }) => {
     setShowDetail(true);
     markAsRead(notification.id);
 
-    // 直接处理任务分配通知的跳转
+    
     const title = notification.title?.toLowerCase() || '';
     if (title.includes('任务分配')) {
       navigation.navigate('TaskDetail');
@@ -128,7 +127,7 @@ const Notifications = ({ navigation }) => {
     }
   };
 
-  // 获取每个分类的未读消息数量
+  
   const getUnreadCount = (category = null) => {
     return notifications.filter(notification => {
       if (!notification.isRead) {

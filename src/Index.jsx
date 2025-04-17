@@ -29,16 +29,16 @@ const Index = ({ navigation }) => {
   const { isLoggedIn } = useAuth();
   const [selectedFamily, setSelectedFamily] = useState(null);
 
-  // 处理家庭头像来源
+  
   const getFamilyAvatarSource = (avatar) => {
     if (!avatar) return CommonImages.placeholder;
     
-    // 如果是默认头像的键名，从FamilyAvatars获取
+    
     if (typeof avatar === 'string' && avatar.startsWith('profile')) {
       return FamilyAvatars[avatar];
     }
     
-    // 如果是base64字符串
+    
     if (typeof avatar === 'string' && avatar.startsWith('data:image')) {
       return { uri: avatar };
     }
@@ -57,7 +57,7 @@ const Index = ({ navigation }) => {
     }
   }, [hasFamily, familyInfo]);
 
-  // 处理按钮点击，游客状态下跳转到登录页面
+  
   const handleButtonPress = (destination) => {
     if (isLoggedIn) {
       navigation.navigate(destination);
@@ -72,7 +72,7 @@ const Index = ({ navigation }) => {
         colors={['#E6E6FA', '#D8BFD8']}
         style={styles.gradientContainer}
       >
-        {/* 顶部标题和按钮区 */}
+        {}
         <View style={styles.header}>
           <View style={styles.rightHeader}>
             <TouchableOpacity 
@@ -141,7 +141,7 @@ const Index = ({ navigation }) => {
           </View>
         </View>
 
-        {/* 中间标题 */}
+        {}
         <View style={styles.titleContainer}>
           <Text style={styles.mainTitle}>
             {!isLoggedIn ? '✨ 欢迎体验家庭助手 ✨' : 
@@ -149,7 +149,7 @@ const Index = ({ navigation }) => {
           </Text>
         </View>
 
-        {/* 主角色卡片 */}
+        {}
         <View style={styles.cardContainer}>
           {loading ? (
             <View style={[styles.mainCard, styles.loadingCard]}>
@@ -187,7 +187,7 @@ const Index = ({ navigation }) => {
           )}
         </View>
 
-        {/* 信息提示卡片 - 仅在游客状态下显示 */}
+        {}
         {!isLoggedIn && (
           <View style={styles.promptContainer}>
             <ImageBackground
@@ -204,7 +204,7 @@ const Index = ({ navigation }) => {
           </View>
         )}
 
-        {/* 底部信息区域 */}
+        {}
         {hasFamily && selectedFamily && isLoggedIn && (
           <View style={styles.bottomSection}>
             <View style={styles.familyInfoContainer}>
@@ -224,7 +224,7 @@ const Index = ({ navigation }) => {
           </View>
         )}
         
-        {/* 游客信息提示 */}
+        {}
         {!isLoggedIn && (
           <View style={styles.guestHintContainer}>
             <Text style={styles.guestHintText}>
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  // 新的信息卡片样式
+  
   promptContainer: {
     width: screenWidth - 40,
     marginHorizontal: 20,

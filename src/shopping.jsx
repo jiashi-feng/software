@@ -26,20 +26,18 @@ import { CommonImages } from './assets/images';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// 更新主题颜色为紫色系
 const COLORS = {
-  primary: '#9B7EDE',      // 主色调：中等紫色
-  accent: '#E6B3FF',       // 强调色：浅紫色
-  background: '#F8F0FF',   // 背景色：极浅紫色
-  surface: '#FFFFFF',      // 表面色：白色
-  text: '#4A4A4A',        // 文字色：深灰色
-  subtext: '#8E8E8E',     // 次要文字：中灰色
-  border: '#E6E0FF',      // 边框色：浅紫色
-  success: '#9B7EDE',     // 成功色：紫色
-  error: '#FF9ECD',       // 错误色：粉紫色
+  primary: '#9B7EDE',      
+  accent: '#E6B3FF',       
+  background: '#F8F0FF',   
+  surface: '#FFFFFF',      
+  text: '#4A4A4A',        
+  subtext: '#8E8E8E',     
+  border: '#E6E0FF',      
+  success: '#9B7EDE',     
+  error: '#FF9ECD',       
 };
 
-// 商品类别图标
 const CATEGORY_ICONS = {
   '全部': 'view-grid',
   '家务券': 'broom',
@@ -58,7 +56,6 @@ const categories = [
   '其他',
 ];
 
-// 更新积分范围分类
 const pointsRanges = [
   '100-300小币',
   '300-800小币',
@@ -66,7 +63,6 @@ const pointsRanges = [
   '1500以上小币'
 ];
 
-// 更新商品数据，按积分从低到高排序
 const mockProducts = [
   {
     id: '1',
@@ -162,23 +158,23 @@ const Shopping = ({ navigation }) => {
   const handleRangeSelect = (range) => {
     setSelectedRange(range);
     
-    // 计算banner和其他内容的总高度
-    const headerHeight = 160 + 16 * 2; // banner高度 + margin
-    const pointsSectionHeight = 50; // 积分显示区域高度
-    const rangesHeight = 50; // 范围选择区域高度
+    
+    const headerHeight = 160 + 16 * 2; 
+    const pointsSectionHeight = 50; 
+    const rangesHeight = 50; 
     const baseOffset = headerHeight + pointsSectionHeight + rangesHeight;
     
-    // 找到该范围内的第一个商品
+    
     const firstProductIndex = mockProducts.findIndex(p => p.category === range);
     
     if (firstProductIndex !== -1) {
-      // 计算需要滚动的位置
-      const itemHeight = 200; // 每个商品卡片的实际高度
-      const itemsPerRow = 2; // 每行显示2个商品
+      
+      const itemHeight = 200; 
+      const itemsPerRow = 2; 
       const rowIndex = Math.floor(firstProductIndex / itemsPerRow);
       const scrollPosition = baseOffset + (rowIndex * itemHeight);
 
-      // 使用setTimeout确保在状态更新后执行滚动
+      
       setTimeout(() => {
         scrollViewRef.current?.scrollTo({
           y: scrollPosition,
@@ -195,9 +191,9 @@ const Shopping = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* 固定在顶部的部分 */}
+      {}
       <View style={styles.fixedHeader}>
-        {/* Banner */}
+        {}
         <View style={styles.banner}>
           <LinearGradient
             colors={['#9B7EDE', '#E6B3FF']}
@@ -210,7 +206,7 @@ const Shopping = ({ navigation }) => {
           </LinearGradient>
         </View>
 
-        {/* 积分显示和赚取按钮 */}
+        {}
         <View style={styles.pointsSection}>
           <View style={styles.pointsDisplay}>
             <Text style={styles.currencySymbol}>🪙</Text>
@@ -225,7 +221,7 @@ const Shopping = ({ navigation }) => {
           </Button>
         </View>
 
-        {/* 积分范围选择 */}
+        {}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -250,7 +246,7 @@ const Shopping = ({ navigation }) => {
         </ScrollView>
       </View>
 
-      {/* 可滚动的商品列表 */}
+      {}
       <ScrollView
         ref={scrollViewRef}
         style={styles.content}
@@ -278,7 +274,7 @@ const Shopping = ({ navigation }) => {
                 <Text style={styles.exchangeCount}>
                   已兑换 {product.exchangeCount} 次
                 </Text>
-                {/* 商品卡片中的积分显示 */}
+                {}
                 <View style={styles.productBottom}>
                   <View style={styles.pointsContainer}>
                     <Text style={styles.smallCurrencySymbol}>🪙</Text>
@@ -300,7 +296,7 @@ const Shopping = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* 兑换确认对话框 */}
+      {}
       <Portal>
         <Dialog
           visible={dialogVisible}
@@ -321,13 +317,13 @@ const Shopping = ({ navigation }) => {
               mode="contained"
               onPress={() => {
                 if (userPoints >= selectedProduct?.points) {
-                  // 更新用户积分
+                  
                   setUserPoints(prevPoints => prevPoints - selectedProduct?.points);
-                  // 关闭对话框
+                  
                   setDialogVisible(false);
-                  // 这里可以添加兑换成功的提示或其他逻辑
+                  
                 } else {
-                  // 积分不足的提示
+                  
                   Alert.alert('积分不足', '您的积分不足以兑换该商品');
                 }
               }}

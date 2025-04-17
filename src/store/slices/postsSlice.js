@@ -1,10 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-// 异步 action：获取帖子列表
 export const fetchPosts = createAsyncThunk(
   'posts/fetchPosts',
   async () => {
-    // TODO: 替换为实际的 API 调用
+    
     const response = await new Promise(resolve => {
       setTimeout(() => {
         resolve([

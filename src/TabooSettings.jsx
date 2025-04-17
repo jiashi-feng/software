@@ -86,7 +86,7 @@ const TabooSettings = ({ navigation }) => {
       </Surface>
 
       <Surface style={styles.tableContainer}>
-        {/* 表头 */}
+        {}
         <View style={styles.tableHeaderRow}>
           <Text style={[styles.tableHeaderCell, styles.tabooCell]}>禁忌类型</Text>
           <Text style={[styles.tableHeaderCell, styles.descriptionCell]}>规则描述</Text>
@@ -95,7 +95,7 @@ const TabooSettings = ({ navigation }) => {
         
         <Divider />
         
-        {/* 表格内容 */}
+        {}
         {taboos.map((taboo) => (
           <View key={taboo.id}>
             <View style={styles.tableRow}>

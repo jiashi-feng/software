@@ -25,8 +25,8 @@ import { CommonImages } from './assets/images';
 const Register = ({ navigation }) => {
   const theme = useTheme();
   const { login } = useAuth();
-  const [step, setStep] = useState(1); // 1: 输入联系方式, 2: 验证码验证, 3: 设置账号密码
-  const [contactType, setContactType] = useState('phone'); // 'phone' 或 'email'
+  const [step, setStep] = useState(1); 
+  const [contactType, setContactType] = useState('phone'); 
   const [contact, setContact] = useState('');
   const [contactError, setContactError] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -40,7 +40,7 @@ const Register = ({ navigation }) => {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
 
-  // 处理倒计时
+  
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -48,7 +48,7 @@ const Register = ({ navigation }) => {
     }
   }, [countdown]);
 
-  // 验证联系方式
+  
   const validateContact = () => {
     if (contactType === 'phone') {
       const phoneRegex = /^1[3-9]\d{9}$/;
@@ -75,7 +75,7 @@ const Register = ({ navigation }) => {
     }
   };
 
-  // 验证验证码
+  
   const validateCode = () => {
     if (!verificationCode) {
       setCodeError('请输入验证码');
@@ -88,7 +88,7 @@ const Register = ({ navigation }) => {
     return true;
   };
 
-  // 验证用户名
+  
   const validateUsername = () => {
     if (!username) {
       setUsernameError('请输入用户名');
@@ -101,7 +101,7 @@ const Register = ({ navigation }) => {
     return true;
   };
 
-  // 验证密码
+  
   const validatePassword = () => {
     const hasLetter = /[a-zA-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
@@ -120,7 +120,7 @@ const Register = ({ navigation }) => {
     return true;
   };
 
-  // 验证确认密码
+  
   const validateConfirmPassword = () => {
     if (!confirmPassword) {
       setConfirmPasswordError('请再次输入密码');
@@ -133,28 +133,28 @@ const Register = ({ navigation }) => {
     return true;
   };
 
-  // 发送验证码
+  
   const sendVerificationCode = () => {
     if (validateContact()) {
-      // 模拟发送验证码
-      console.log(`发送验证码到: ${contact}`);
-      setCountdown(60); // 60秒倒计时
-      // 实际应用中这里应该调用API发送验证码
+      
+      
+      setCountdown(60); 
+      
     }
   };
 
-  // 验证验证码并进入下一步
+  
   const verifyCode = () => {
     if (validateCode()) {
-      // 实际应用中这里应该验证验证码是否正确
+      
       setStep(3);
     }
   };
 
-  // 完成注册
+  
   const completeRegistration = async () => {
     if (validateUsername() && validatePassword() && validateConfirmPassword()) {
-      // 创建用户信息对象
+      
       const userInfo = {
         name: username,
         level: '新手 Lv.1',
@@ -164,17 +164,17 @@ const Register = ({ navigation }) => {
         completionRate: '0%'
       };
 
-      // 调用登录方法
+      
       await login(userInfo);
       
-      // 注册成功后导航到用户偏好选择页面
+      
       navigation.navigate('AbilityChoice');
     }
   };
 
-  // 第三方注册
+  
   const handleThirdPartyRegister = async (platform) => {
-    // 创建第三方用户信息
+    
     const userInfo = {
       name: `${platform}用户`,
       level: '新手 Lv.1',
@@ -184,14 +184,14 @@ const Register = ({ navigation }) => {
       completionRate: '0%'
     };
 
-    // 调用登录方法
+    
     await login(userInfo);
     
-    // 导航到用户偏好选择页面
+    
     navigation.navigate('AbilityChoice');
   };
 
-  // 渲染导航栏
+  
   const renderHeader = () => (
     <Appbar.Header>
       <Appbar.BackAction onPress={() => {
@@ -205,7 +205,7 @@ const Register = ({ navigation }) => {
     </Appbar.Header>
   );
 
-  // 渲染第三方登录按钮
+  
   const renderThirdPartyLogin = () => (
     <View style={styles.thirdPartyContainer}>
       <Divider style={styles.divider} />
@@ -227,7 +227,7 @@ const Register = ({ navigation }) => {
     </View>
   );
 
-  // 渲染步骤1：选择联系方式并输入
+  
   const renderStep1 = () => (
     <View style={styles.stepContainer}>
       <Text style={styles.stepTitle}>第1步：输入联系方式</Text>
@@ -286,7 +286,7 @@ const Register = ({ navigation }) => {
     </View>
   );
 
-  // 渲染步骤2：验证码验证
+  
   const renderStep2 = () => (
     <View style={styles.stepContainer}>
       <Text style={styles.stepTitle}>第2步：验证码验证</Text>
@@ -333,7 +333,7 @@ const Register = ({ navigation }) => {
     </View>
   );
 
-  // 渲染步骤3：设置账号密码
+  
   const renderStep3 = () => (
     <View style={styles.stepContainer}>
       <Text style={styles.stepTitle}>第3步：设置账号密码</Text>
@@ -407,7 +407,7 @@ const Register = ({ navigation }) => {
     </View>
   );
 
-  // 渲染步骤
+  
   const renderStep = () => {
     switch (step) {
       case 1:

@@ -17,7 +17,6 @@ import {
 } from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
 
-
 const Setting = ({ navigation }) => {
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
@@ -25,7 +24,7 @@ const Setting = ({ navigation }) => {
   const [vibration, setVibration] = useState(true);
   const theme = useTheme();
 
-  // 返回处理函数
+  
   const handleGoBack = () => {
     navigation.navigate('MainTabs');
   };
