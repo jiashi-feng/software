@@ -39,18 +39,17 @@ const skillCategories = [
       { id: 'ironing', name: '熨烫', icon: 'iron' },
       { id: 'shopping', name: '购物', icon: 'cart' },
       { id: 'organizing', name: '收纳整理', icon: 'folder-organize' },
-      { id: 'meal-prep', name: '餐食准备', icon: 'silverware' },
     ]
   },
   {
     id: 'parenting',
     name: '育儿教育类',
     skills: [
-      { id: 'childcare', name: '育儿', icon: 'baby-face-outline' },
-      { id: 'teaching', name: '教育辅导', icon: 'school' },
-      { id: 'story-telling', name: '讲故事', icon: 'book-open-variant' },
-      { id: 'activities', name: '亲子活动', icon: 'balloon' },
-      { id: 'meal-planning', name: '儿童餐饮', icon: 'food-apple' },
+      { id: 'early-education', name: '早教引导', icon: 'baby-face-outline' },
+      { id: 'homework-assist', name: '课业辅导', icon: 'school' },
+      { id: 'interest-dev', name: '兴趣培养', icon: 'palette' },
+      { id: 'parent-child', name: '亲子活动', icon: 'balloon' },
+      { id: 'safety-watch', name: '安全监护', icon: 'shield-home' },
     ]
   },
   {
@@ -70,11 +69,10 @@ const skillCategories = [
     name: '综合管理类',
     skills: [
       { id: 'scheduling', name: '日程规划', icon: 'calendar' },
-      { id: 'budgeting', name: '家庭预算', icon: 'cash' },
-      { id: 'pet-care', name: '宠物护理', icon: 'paw' },
-      { id: 'elderly-care', name: '老人护理', icon: 'account-heart' },
-      { id: 'health-mgmt', name: '健康管理', icon: 'heart-pulse' },
-      { id: 'doc-mgmt', name: '文件管理', icon: 'file-document' },
+      { id: 'finance', name: '财务统筹', icon: 'cash' },
+      { id: 'purchasing', name: '采购议价', icon: 'shopping' },
+      { id: 'medical-care', name: '医疗护理', icon: 'medical-bag' },
+      { id: 'event-planning', name: '活动策划', icon: 'calendar-star' },
     ]
   }
 ];
@@ -158,52 +156,15 @@ const environmentPreferences = [
   },
 ];
 
-const emotionalPreferences = [
-  {
-    id: 'achievement',
-    name: '成就导向型',
-    description: '喜欢有明确目标和成果的任务，享受完成挑战的成就感',
-    icon: 'trophy',
-  },
-  {
-    id: 'relationship',
-    name: '关系导向型',
-    description: '偏好能够增进家庭成员互动和感情的任务类型',
-    icon: 'heart',
-  },
-  {
-    id: 'growth',
-    name: '成长导向型',
-    description: '偏好能够学习新技能或提升能力的任务类型',
-    icon: 'chart-line',
-  },
-  {
-    id: 'altruistic',
-    name: '利他导向型',
-    description: '愿意承担更多家务，减轻他人负担',
-    icon: 'hand-heart',
-  },
-  {
-    id: 'comfort',
-    name: '舒适优先型',
-    description: '偏好简单、熟悉且不会带来压力的任务',
-    icon: 'sofa',
-  },
-];
-
 const AbilityChoice = ({ navigation }) => {
   const theme = useTheme();
-  
   
   const [currentStep, setCurrentStep] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
   
-  
   const [selectedSkills, setSelectedSkills] = useState({});
   
-  
   const [taskTypePreferences, setTaskTypePreferences] = useState([]);
-  
   
   const [timePreferences, setTimePreferences] = useState(
     timeSlots.reduce((acc, slot) => {
@@ -212,7 +173,6 @@ const AbilityChoice = ({ navigation }) => {
     }, {})
   );
   
-  
   const [environmentValues, setEnvironmentValues] = useState({
     noise: 3,
     space: 3,
@@ -220,20 +180,13 @@ const AbilityChoice = ({ navigation }) => {
     multitasking: 3
   });
   
-  
   const [currentCategory, setCurrentCategory] = useState(skillCategories[0].id);
-  
   
   const [helpModalVisible, setHelpModalVisible] = useState(false);
   
-  
-  const [emotionalValuePreferences, setEmotionalValuePreferences] = useState([]);
-  
-  
-  const steps = ['技能选择', '任务偏好', '时间偏好', '情感价值偏好', '环境偏好'];
+  const steps = ['技能选择', '任务偏好', '时间偏好', '环境偏好'];
   const progress = (currentStep + 1) / steps.length;
 
-  
   const toggleSkill = (skillId) => {
     setSelectedSkills(prev => {
       const newSelection = { ...prev };
@@ -246,7 +199,6 @@ const AbilityChoice = ({ navigation }) => {
     });
   };
 
-  
   const toggleTaskPreference = (prefId) => {
     setTaskTypePreferences(prev => 
       prev.includes(prefId)
@@ -255,7 +207,6 @@ const AbilityChoice = ({ navigation }) => {
     );
   };
 
-  
   const handleTimePreferenceChange = (slotId, strength) => {
     setTimePreferences({
       ...timePreferences,
@@ -263,7 +214,6 @@ const AbilityChoice = ({ navigation }) => {
     });
   };
 
-  
   const handleEnvironmentChange = (prefId, value) => {
     setEnvironmentValues(prev => ({
       ...prev,
@@ -271,16 +221,6 @@ const AbilityChoice = ({ navigation }) => {
     }));
   };
 
-  
-  const toggleEmotionalPreference = (prefId) => {
-    setEmotionalValuePreferences(prev => 
-      prev.includes(prefId)
-        ? prev.filter(id => id !== prefId)
-        : [...prev, prefId]
-    );
-  };
-
-  
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -289,38 +229,29 @@ const AbilityChoice = ({ navigation }) => {
     }
   };
 
-  
   const handleBack = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
 
-  
   const handleSkip = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     }
   };
 
-  
   const handleSubmit = () => {
-    
     const userData = {
       skills: Object.keys(selectedSkills),
       taskPreferences: taskTypePreferences,
       timePreferences: timePreferences,
       environmentPreferences: environmentValues,
-      emotionalValuePreferences
     };
-    
-    
-    
     
     navigation.navigate('MainTabs');
   };
 
-  
   const renderCategoryTabs = () => (
     <View style={styles.categoryTabsWrapper}>
       <View style={styles.categoryTabsContainer}>
@@ -349,11 +280,9 @@ const AbilityChoice = ({ navigation }) => {
           ))}
         </ScrollView>
         
-        {}
         <View style={styles.tabShadowIndicator} />
       </View>
       
-      {}
       <View style={styles.scrollIndicator}>
         {skillCategories.map((category, index) => (
           <View 
@@ -368,7 +297,6 @@ const AbilityChoice = ({ navigation }) => {
     </View>
   );
 
-  
   const renderSkills = () => {
     const currentCategoryData = skillCategories.find(cat => cat.id === currentCategory);
     
@@ -406,7 +334,6 @@ const AbilityChoice = ({ navigation }) => {
     );
   };
 
-  
   const renderTaskPreferences = () => (
     <View style={styles.preferencesSection}>
       <Title style={styles.sectionTitle}>任务类型偏好</Title>
@@ -443,7 +370,6 @@ const AbilityChoice = ({ navigation }) => {
     </View>
   );
 
-  
   const renderTimePreferences = () => {
     return (
       <View style={styles.timePreferencesContainer}>
@@ -453,7 +379,6 @@ const AbilityChoice = ({ navigation }) => {
         </Text>
         
         <Surface style={styles.timeTable}>
-          {}
           <View style={styles.timeTableHeader}>
             <Text style={[styles.timeTableHeaderCell, styles.timeRangeCell]}>时间段</Text>
             <Text style={[styles.timeTableHeaderCell, styles.taskTypesCell]}>适合任务类型</Text>
@@ -462,7 +387,6 @@ const AbilityChoice = ({ navigation }) => {
           
           <Divider />
           
-          {}
           {timeSlots.map((slot) => (
             <View key={slot.id}>
               <View style={styles.timeTableRow}>
@@ -475,7 +399,6 @@ const AbilityChoice = ({ navigation }) => {
                 </View>
                 
                 <View style={[styles.timeTableCell, styles.strengthCell]}>
-                  {}
                   <View style={styles.starsContainer}>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <IconButton
@@ -505,47 +428,6 @@ const AbilityChoice = ({ navigation }) => {
     );
   };
 
-  
-  const renderEmotionalPreferences = () => (
-    <View style={styles.preferencesSection}>
-      <Title style={styles.sectionTitle}>情感价值偏好</Title>
-      <Subheading style={styles.sectionSubtitle}>选择能够激励你的任务类型（可多选）</Subheading>
-      
-      {emotionalPreferences.map(pref => (
-        <Card 
-          key={pref.id} 
-          style={[
-            styles.emotionalPrefCard,
-            emotionalValuePreferences.includes(pref.id) && styles.selectedEmotionalPrefCard
-          ]}
-          onPress={() => toggleEmotionalPreference(pref.id)}
-        >
-          <View style={styles.emotionalPrefContent}>
-            <View style={styles.emotionalPrefIconContainer}>
-              <CustomIcon 
-                name={pref.icon} 
-                size={28} 
-                color={emotionalValuePreferences.includes(pref.id) ? theme.colors.primary : '#666'} 
-              />
-            </View>
-            <View style={styles.emotionalPrefTextContainer}>
-              <Text style={styles.emotionalPrefTitle}>
-                <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>• </Text>
-                {pref.name}:
-              </Text>
-              <Text style={styles.emotionalPrefDescription}>{pref.description}</Text>
-            </View>
-            <Checkbox
-              status={emotionalValuePreferences.includes(pref.id) ? 'checked' : 'unchecked'}
-              color={theme.colors.primary}
-            />
-          </View>
-        </Card>
-      ))}
-    </View>
-  );
-
-  
   const renderEnvironmentPreferences = () => (
     <View style={styles.preferencesSection}>
       <Title style={styles.sectionTitle}>环境偏好</Title>
@@ -609,7 +491,6 @@ const AbilityChoice = ({ navigation }) => {
               <Text style={styles.environmentPreferenceMax}>{pref.max}</Text>
             </View>
             
-            {}
             {pref.id !== environmentPreferences[environmentPreferences.length - 1].id && (
               <Divider style={styles.environmentPreferenceDivider} />
             )}
@@ -619,7 +500,6 @@ const AbilityChoice = ({ navigation }) => {
     </View>
   );
 
-  
   const renderStepContent = () => {
     switch(currentStep) {
       case 0:
@@ -634,15 +514,12 @@ const AbilityChoice = ({ navigation }) => {
       case 2:
         return renderTimePreferences();
       case 3:
-        return renderEmotionalPreferences();
-      case 4:
         return renderEnvironmentPreferences();
       default:
         return null;
     }
   };
 
-  
   const renderHelpModal = () => (
     <Portal>
       <Modal
@@ -656,8 +533,7 @@ const AbilityChoice = ({ navigation }) => {
           {currentStep === 0 && '请选择你擅长的家务技能。您可以通过上方的分类标签切换不同类别的技能。'}
           {currentStep === 1 && '请选择你偏好的任务类型。这将帮助系统更好地为你分配适合的任务。'}
           {currentStep === 2 && '请选择你偏好的工作时间段。系统会尽量根据你的时间偏好安排任务。'}
-          {currentStep === 3 && '请选择你偏好的情感价值类型。这将帮助系统更好地为你分配适合的任务。'}
-          {currentStep === 4 && '请调整滑块设置你的环境偏好。这些信息将帮助系统更准确地匹配适合你的任务环境。'}
+          {currentStep === 3 && '请调整滑块设置你的环境偏好。这些信息将帮助系统更准确地匹配适合你的任务环境。'}
         </Text>
         <Button
           mode="contained"
@@ -672,7 +548,6 @@ const AbilityChoice = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {}
       <Surface style={styles.header}>
         <View style={styles.progressContainer}>
           <Text style={styles.stepText}>步骤 {currentStep + 1}/{steps.length}: {steps[currentStep]}</Text>
@@ -686,12 +561,10 @@ const AbilityChoice = ({ navigation }) => {
         />
       </Surface>
       
-      {}
       <ScrollView style={styles.content}>
         {renderStepContent()}
       </ScrollView>
       
-      {}
       <Surface style={styles.footer}>
         {currentStep > 0 && (
           <Button
@@ -724,7 +597,6 @@ const AbilityChoice = ({ navigation }) => {
         </View>
       </Surface>
       
-      {}
       {renderHelpModal()}
     </View>
   );
@@ -1005,76 +877,6 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     marginTop: 8,
-  },
-  emotionalPrefCard: {
-    marginBottom: 12,
-    borderRadius: 8,
-    overflow: 'hidden',
-    elevation: 1,
-  },
-  selectedEmotionalPrefCard: {
-    borderWidth: 2,
-    borderColor: '#6200ee',
-  },
-  emotionalPrefContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-  },
-  emotionalPrefIconContainer: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  emotionalPrefTextContainer: {
-    flex: 1,
-    paddingRight: 8,
-  },
-  emotionalPrefTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginBottom: 2,
-    color: '#333',
-  },
-  emotionalPrefDescription: {
-    fontSize: 13,
-    color: '#666',
-    lineHeight: 18,
-  },
-  emotionalPreferencesContainer: {
-    marginTop: 16,
-    paddingHorizontal: 16,
-  },
-  emotionalPreferenceCard: {
-    marginBottom: 12,
-    borderRadius: 8,
-    elevation: 1,
-  },
-  selectedEmotionalPreferenceCard: {
-    backgroundColor: '#4A6FA5',
-  },
-  emotionalPreferenceContent: {
-    paddingVertical: 16,
-  },
-  emotionalPreferenceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  emotionalPreferenceName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 12,
-  },
-  emotionalPreferenceDescription: {
-    fontSize: 14,
-    color: '#666',
-    paddingLeft: 36,
-  },
-  selectedEmotionalPreferenceText: {
-    color: '#FFFFFF',
   },
   environmentPreferencesContainer: {
     marginTop: 8,
