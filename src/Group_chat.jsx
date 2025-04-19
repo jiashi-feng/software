@@ -1,10 +1,11 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -13,72 +14,76 @@ import {
   IconButton,
   Avatar,
   useTheme,
+  Portal,
+  Dialog,
+  Button,
 } from 'react-native-paper';
 import { CommonImages } from './assets/images';
+import { useAuth } from './store/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const mockMessages = [
+// 只保留自己的消息
+const initialMessages = [
   {
     id: 1,
-    sender: {
-      id: 'user1',
-      name: '妈妈',
-      avatar: null,
-    },
-    content: '今天谁负责打扫客厅？',
-    timestamp: '10:00',
-    isOwn: false,
-  },
-  {
-    id: 2,
-    sender: {
-      id: 'user2',
-      name: '爸爸',
-      avatar: null,
-    },
-    content: '我来打扫吧，你负责准备晚餐',
-    timestamp: '10:01',
-    isOwn: false,
-  },
-  {
-    id: 3,
     sender: {
       id: 'currentUser',
       name: '我',
       avatar: null,
     },
-    content: '好的，那我来洗碗',
+    content: '我来洗碗',
     timestamp: '10:02',
     isOwn: true,
   },
 ];
 
-const mockMembers = [
-  {
-    id: 'user1',
-    name: '妈妈',
-    avatar: null,
-    role: '管理员',
-  },
-  {
-    id: 'user2',
-    name: '爸爸',
-    avatar: null,
-    role: '成员',
-  },
-  {
-    id: 'user3',
-    name: '我',
-    avatar: null,
-    role: '成员',
-  },
-];
-
 const GroupChat = ({ navigation }) => {
+  const { userInfo } = useAuth();
   const [message, setMessage] = useState('');
   const [showMembers, setShowMembers] = useState(false);
+  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
+  const [newMemberId, setNewMemberId] = useState('');
+  const [newMemberName, setNewMemberName] = useState('');
   const theme = useTheme();
-
+  const [messages, setMessages] = useState([]);
+  const [members, setMembers] = useState([]);
   
+  // Load messages and members from AsyncStorage on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const savedMessages = await AsyncStorage.getItem('chatMessages');
+        const savedMembers = await AsyncStorage.getItem('chatMembers');
+
+        if (savedMessages) {
+          setMessages(JSON.parse(savedMessages));
+        } else {
+          setMessages(initialMessages);
+          await AsyncStorage.setItem('chatMessages', JSON.stringify(initialMessages));
+        }
+
+        if (savedMembers) {
+          setMembers(JSON.parse(savedMembers));
+        } else {
+          const defaultMembers = [
+            {
+              id: 'currentUser',
+              name: '我',
+              avatar: null,
+              role: '管理员',
+            }
+          ];
+          setMembers(defaultMembers);
+          await AsyncStorage.setItem('chatMembers', JSON.stringify(defaultMembers));
+        }
+      } catch (error) {
+        console.error('Error loading chat data:', error);
+      }
+    };
+
+    loadData();
+  }, []);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -98,11 +103,44 @@ const GroupChat = ({ navigation }) => {
     });
   }, [navigation, showMembers]);
 
-  const handleSend = () => {
+  const handleAddMember = async () => {
+    if (!newMemberId.trim() || !newMemberName.trim()) {
+      Alert.alert('提示', '请输入成员ID和姓名');
+      return;
+    }
+
+    if (members.some(member => member.id === newMemberId)) {
+      Alert.alert('提示', '该成员ID已存在');
+      return;
+    }
+
+    const newMember = {
+      id: newMemberId,
+      name: newMemberName,
+      avatar: null,
+      role: '成员',
+    };
+
+    const updatedMembers = [...members, newMember];
+    setMembers(updatedMembers);
+    setNewMemberId('');
+    setNewMemberName('');
+    setShowAddMemberDialog(false);
+
+    try {
+      await AsyncStorage.setItem('chatMembers', JSON.stringify(updatedMembers));
+      Alert.alert('成功', '成员添加成功');
+    } catch (error) {
+      console.error('Error saving members:', error);
+      Alert.alert('错误', '保存成员信息失败');
+    }
+  };
+
+  const handleSend = async () => {
     if (!message.trim()) return;
 
     const newMessage = {
-      id: mockMessages.length + 1,
+      id: messages.length + 1,
       sender: {
         id: 'currentUser',
         name: '我',
@@ -113,12 +151,18 @@ const GroupChat = ({ navigation }) => {
       isOwn: true,
     };
 
-    
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
     setMessage('');
+
+    try {
+      await AsyncStorage.setItem('chatMessages', JSON.stringify(updatedMessages));
+    } catch (error) {
+      console.error('Error saving messages:', error);
+    }
   };
 
   const handleNavigateToTaskDetail = () => {
-    
     navigation.navigate('FamilyTaskDetail');
   };
 
@@ -127,28 +171,75 @@ const GroupChat = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {}
-
       {showMembers && (
         <Surface style={styles.membersList}>
-          {mockMembers.map(member => (
-            <View key={member.id} style={styles.memberItem}>
-              <Avatar.Image
-                size={40}
-                source={member.avatar || CommonImages.avatar}
-              />
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberName}>{member.name}</Text>
-                <Text style={styles.memberRole}>{member.role}</Text>
+          {members.map((member, index) => (
+            <View key={member.id}>
+              <View style={styles.memberItem}>
+                <Avatar.Image
+                  size={40}
+                  source={member.avatar || CommonImages.avatar}
+                />
+                <View style={styles.memberInfo}>
+                  <Text style={styles.memberName}>{member.name}</Text>
+                  <Text style={styles.memberRole}>{member.role}</Text>
+                </View>
               </View>
+             
+              {index === 0 && (
+                <IconButton
+                  icon="plus-circle"
+                  size={30}
+                  color={theme.colors.primary}
+                  style={styles.addButton}
+                  onPress={() => setShowAddMemberDialog(true)}
+                />
+              )}
             </View>
           ))}
         </Surface>
       )}
 
+      {/* 添加成员对话框 */}
+      <Portal>
+        <Dialog
+          visible={showAddMemberDialog}
+          onDismiss={() => {
+            setShowAddMemberDialog(false);
+            setNewMemberId('');
+            setNewMemberName('');
+          }}
+        >
+          <Dialog.Title>添加家庭成员</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="成员ID"
+              value={newMemberId}
+              onChangeText={setNewMemberId}
+              mode="outlined"
+              style={styles.dialogInput}
+            />
+            <TextInput
+              label="成员姓名"
+              value={newMemberName}
+              onChangeText={setNewMemberName}
+              mode="outlined"
+              style={styles.dialogInput}
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => {
+              setShowAddMemberDialog(false);
+              setNewMemberId('');
+              setNewMemberName('');
+            }}>取消</Button>
+            <Button onPress={handleAddMember}>确认</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
       <ScrollView style={styles.messagesContainer}>
-        {}
-        {mockMessages.map(msg => (
+        {messages.map(msg => (
           <View
             key={msg.id}
             style={[
@@ -305,6 +396,14 @@ const styles = StyleSheet.create({
     height: 55,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  addButton: {
+    alignSelf: 'center',
+    marginTop: -8,
+    marginBottom: 12,
+  },
+  dialogInput: {
+    marginBottom: 12,
   },
 });
 

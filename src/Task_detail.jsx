@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,120 +6,281 @@ import {
   TouchableOpacity,
   Animated,
   Text as RNText,
+  Alert,
 } from 'react-native';
 import {
   Text,
   Surface,
-  IconButton,
   TextInput,
   Button,
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import { useAuth } from './store/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from './services/api';
 
 const TaskDetail = ({ navigation }) => {
-  const [tasks, setTasks] = useState([
-    { 
-      id: 1, 
-      content: '整理杂物', 
-      completed: false,
-      points: 30,
-      deadline: '今天 18:00',
-      animationValue: new Animated.Value(0),
-    },
-    { 
-      id: 2, 
-      content: '扫地', 
-      completed: false,
-      points: 20,
-      deadline: '今天 20:00',
-      animationValue: new Animated.Value(0),
-    },
-    { 
-      id: 3, 
-      content: '拖地', 
-      completed: false,
-      points: 25,
-      deadline: '明天 10:00',
-      animationValue: new Animated.Value(0),
-    },
-    { 
-      id: 4, 
-      content: '擦桌子', 
-      completed: false,
-      points: 15,
-      deadline: '今天 19:00',
-      animationValue: new Animated.Value(0),
-    },
-    { 
-      id: 5, 
-      content: '清理垃圾', 
-      completed: false,
-      points: 10,
-      deadline: '今天 21:00',
-      animationValue: new Animated.Value(0),
-    },
-  ]);
+  const { userInfo, updateUserInfo } = useAuth();
+  const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showSubtitle, setShowSubtitle] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const confettiRef = useRef(null);
 
-  const handleTaskToggle = (taskId) => {
-    const updatedTasks = tasks.map(task => {
-      if (task.id === taskId) {
-        const newCompletedState = !task.completed;
-        if (newCompletedState) {
-          setShowConfetti(true);
-          setShowSubtitle(true);
-          Animated.timing(task.animationValue, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }).start(() => {
-            task.animationValue.setValue(0);
-          });
-
-          setTimeout(() => {
-            setShowSubtitle(false);
-          }, 3000);
+  // 加载任务（先尝试从后端获取推荐任务，如失败则从本地加载）
+  useEffect(() => {
+    const loadTasks = async () => {
+      setIsLoading(true);
+      try {
+        // 首先尝试加载本地任务作为备份
+        await loadLocalTasks();
+        
+        // 然后检查任务服务是否可用
+        const isTaskServiceAvailable = await api.checkTaskServiceHealth();
+        
+        if (isTaskServiceAvailable) {
+          try {
+            // 如果可用，获取推荐任务
+            const recommendedTasks = await api.task.getRecommendedTasks();
+            if (recommendedTasks && recommendedTasks.length > 0) {
+              // 添加动画值到每个任务
+              const tasksWithAnimation = recommendedTasks.map(task => ({
+                ...task,
+                id: task.id || task._id,
+                content: task.title || task.content,
+                animationValue: new Animated.Value(0),
+                completed: task.completed || false,
+                points: task.points || 20,
+                deadline: task.deadline || '今天 18:00'
+              }));
+              setTasks(tasksWithAnimation);
+              
+              // 保存到本地作为备份
+              await saveTasksToStorage(tasksWithAnimation);
+            }
+          } catch (apiError) {
+            console.log('获取推荐任务失败，使用已加载的本地任务');
+            // 使用之前加载的本地任务，无需操作
+          }
+        } else {
+          console.log('任务服务不可用，使用本地任务');
+          // 已经加载了本地任务，无需操作
         }
-        return { ...task, completed: newCompletedState };
+      } catch (error) {
+        console.log('任务加载过程出错，使用默认任务');
+        // 加载默认任务
+        const defaultTasks = [
+          { 
+            id: 1, 
+            content: '整理杂物', 
+            completed: false,
+            points: 30,
+            deadline: '今天 18:00',
+            animationValue: new Animated.Value(0),
+          },
+          { 
+            id: 2, 
+            content: '扫地', 
+            completed: false,
+            points: 20,
+            deadline: '今天 20:00',
+            animationValue: new Animated.Value(0),
+          },
+          { 
+            id: 3, 
+            content: '拖地', 
+            completed: false,
+            points: 25,
+            deadline: '明天 10:00',
+            animationValue: new Animated.Value(0),
+          },
+          { 
+            id: 4, 
+            content: '擦桌子', 
+            completed: false,
+            points: 15,
+            deadline: '今天 19:00',
+            animationValue: new Animated.Value(0),
+          },
+          { 
+            id: 5, 
+            content: '清理垃圾', 
+            completed: false,
+            points: 10,
+            deadline: '今天 21:00',
+            animationValue: new Animated.Value(0),
+          },
+        ];
+        setTasks(defaultTasks);
+        await saveTasksToStorage(defaultTasks);
+      } finally {
+        setIsLoading(false);
       }
-      return task;
-    });
-
-    setTasks(updatedTasks);
+    };
+    
+    loadTasks();
+  }, []);
+  
+  // 从本地加载任务的辅助函数
+  const loadLocalTasks = async () => {
+    try {
+      const savedTasks = await AsyncStorage.getItem('tasks');
+      if (savedTasks) {
+        const parsedTasks = JSON.parse(savedTasks);
+        // 始终为每个任务创建新的动画值，因为动画值不能序列化
+        const tasksWithAnimation = parsedTasks.map(task => ({
+          ...task,
+          animationValue: new Animated.Value(0)
+        }));
+        setTasks(tasksWithAnimation);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.log('读取本地任务失败:', error);
+      return false;
+    }
   };
 
-  const handleAddTask = () => {
-    if (newTask.trim()) {
-      setTasks([
-        ...tasks,
-        {
-          id: Date.now(),
-          content: newTask.trim(),
-          completed: false,
-          points: 20,
-          deadline: '今天 20:00',
-          animationValue: new Animated.Value(0),
+  // 修改保存任务到AsyncStorage的方法，移除不可序列化的属性
+  const saveTasksToStorage = async (tasksToSave) => {
+    try {
+      // 在保存前移除不可序列化的animationValue属性
+      const serializableTasks = tasksToSave.map(({ animationValue, ...task }) => task);
+      await AsyncStorage.setItem('tasks', JSON.stringify(serializableTasks));
+      return true;
+    } catch (error) {
+      console.log('保存任务到本地失败:', error);
+      return false;
+    }
+  };
+
+  const handleTaskToggle = async (taskId) => {
+    try {
+      const taskToToggle = tasks.find(task => task.id.toString() === taskId.toString());
+      if (!taskToToggle) return;
+      
+      const newCompletedState = !taskToToggle.completed;
+      const currentPoints = parseInt(userInfo?.points ?? '0', 10);
+      let newPoints;
+      
+      if (newCompletedState) {
+        newPoints = currentPoints + taskToToggle.points;
+        setShowConfetti(true);
+        setShowSubtitle(true);
+        
+        Animated.timing(taskToToggle.animationValue, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start(() => {
+          taskToToggle.animationValue.setValue(0);
+        });
+
+        setTimeout(() => {
+          setShowSubtitle(false);
+        }, 3000);
+        
+        // 尝试更新后端任务状态，但不阻止本地更新
+        const isTaskServiceAvailable = await api.checkTaskServiceHealth();
+        if (isTaskServiceAvailable) {
+          try {
+            await api.task.updateTask(taskId, { completed: true });
+          } catch (apiError) {
+            // 静默处理API错误，确保UI流程不中断
+            console.log('更新后端任务状态失败，仅更新本地状态');
+          }
         }
-      ]);
+      } else {
+        newPoints = currentPoints - taskToToggle.points;
+      }
+
+      // 更新用户积分
+      try {
+        await updateUserInfo({ points: String(newPoints) });
+      } catch (pointsError) {
+        // 如果更新用户信息失败，显示提示但继续更新任务状态
+        console.log('更新用户积分失败:', pointsError);
+        Alert.alert('注意', '积分更新可能未保存');
+      }
+      
+      // 更新本地任务状态
+      const updatedTasks = tasks.map(task => {
+        if (task.id.toString() === taskId.toString()) {
+          return { ...task, completed: newCompletedState };
+        }
+        return task;
+      });
+      
+      setTasks(updatedTasks);
+      
+      // 保存到本地存储
+      await saveTasksToStorage(updatedTasks);
+    } catch (error) {
+      console.log('任务处理过程出错:', error);
+      Alert.alert('操作失败', '任务状态更新失败，请重试');
+    }
+  };
+
+  const handleAddTask = async () => {
+    if (!newTask.trim()) return;
+    
+    try {
+      setIsLoading(true);
+      const newTaskObj = {
+        id: Date.now().toString(),
+        content: newTask,
+        completed: false,
+        points: 15, // 默认积分
+        deadline: '今天',
+        animationValue: new Animated.Value(0)
+      };
+      
+      const updatedTasks = [...tasks, newTaskObj];
+      setTasks(updatedTasks);
       setNewTask('');
       setIsAddingTask(false);
+      
+      // 保存到本地存储
+      await saveTasksToStorage(updatedTasks);
+      
+      // 尝试同步到后端，但不阻止本地添加流程
+      try {
+        const isTaskServiceAvailable = await api.checkTaskServiceHealth();
+        if (isTaskServiceAvailable) {
+          await api.task.createTask({
+            title: newTask,
+            points: 15,
+            deadline: new Date(Date.now() + 24*60*60*1000).toISOString() // 默认1天后截止
+          });
+        }
+      } catch (apiError) {
+        console.log('同步任务到后端失败，已保存在本地');
+        // 不影响用户体验，静默处理
+      }
+    } catch (error) {
+      console.log('添加任务失败:', error);
+      Alert.alert('添加失败', '无法添加任务，请重试');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const TaskItem = ({ task, onToggle }) => {
+    // 安全地使用动画值，确保task.animationValue一定是Animated.Value实例
+    const animatedScale = task.animationValue ? task.animationValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 1.2],
+    }) : 1;
+
     const animatedStyle = {
-      opacity: task.animationValue,
+      opacity: task.animationValue || 1,
       transform: [{
-        scale: task.animationValue.interpolate({
-          inputRange: [0, 1],
-          outputRange: [1, 1.2],
-        }),
+        scale: animatedScale,
       }],
     };
 

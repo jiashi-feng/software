@@ -203,7 +203,7 @@ const AppNavigator = () => {
         <Stack.Screen 
           name="AbilityChoice" 
           component={AbilityChoice}
-          options={{ title: '技能选择' }}
+          options={{ title: '用户偏好选择' }}
         />
         <Stack.Screen 
           name="FamilyCheck" 

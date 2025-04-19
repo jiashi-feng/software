@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,6 +13,8 @@ import {
   List,
   Button,
   useTheme,
+  Dialog,
+  Portal,
 } from 'react-native-paper';
 import { useAuth } from './store/AuthContext';
 import { CommonImages } from './assets/images';
@@ -20,6 +22,7 @@ import { CommonImages } from './assets/images';
 const PersonCenter = ({ navigation }) => {
   const theme = useTheme();
   const { isLoggedIn, userInfo, logout } = useAuth();
+  const [showLogoutDialog, setShowLogoutDialog] = React.useState(false);
 
   const menuItems = [
     {
@@ -88,24 +91,21 @@ const PersonCenter = ({ navigation }) => {
 
   
   const handleLogout = async () => {
-    Alert.alert(
-      '退出登录',
-      '确定要退出登录吗？',
-      [
-        {
-          text: '取消',
-          style: 'cancel'
-        },
-        {
-          text: '确定',
-          onPress: async () => {
-            await logout();
-            
-            navigation.navigate('MainTabs', { screen: 'Index' });
-          }
-        }
-      ]
-    );
+    setShowLogoutDialog(true);
+  };
+
+  const confirmLogout = useCallback(async () => {
+    try {
+      await logout();
+      setShowLogoutDialog(false);
+      navigation.navigate('MainTabs', { screen: 'Index' });
+    } catch (error) {
+      console.error('退出登录失败:', error);
+    }
+  }, [logout, navigation]);
+
+  const hideLogoutDialog = () => {
+    setShowLogoutDialog(false);
   };
 
   return (
@@ -167,6 +167,19 @@ const PersonCenter = ({ navigation }) => {
           立即登录
         </Button>
       )}
+
+      <Portal>
+        <Dialog visible={showLogoutDialog} onDismiss={hideLogoutDialog}>
+          <Dialog.Title>退出登录</Dialog.Title>
+          <Dialog.Content>
+            <Text>确定要退出登录吗？</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={hideLogoutDialog}>取消</Button>
+            <Button onPress={confirmLogout}>确定</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </ScrollView>
   );
 };

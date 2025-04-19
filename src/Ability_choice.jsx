@@ -5,6 +5,8 @@ import {
   ScrollView,
   Dimensions,
   Animated,
+  Alert,
+  AsyncStorage,
 } from 'react-native';
 import {
   Text,
@@ -19,12 +21,11 @@ import {
   IconButton,
   Portal,
   Modal,
-  RadioButton,
   Checkbox,
   Card,
-  Switch,
 } from 'react-native-paper';
 import CustomIcon from './components/CustomIcon';
+import api from './services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -241,7 +242,7 @@ const AbilityChoice = ({ navigation }) => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const userData = {
       skills: Object.keys(selectedSkills),
       taskPreferences: taskTypePreferences,
@@ -249,7 +250,58 @@ const AbilityChoice = ({ navigation }) => {
       environmentPreferences: environmentValues,
     };
     
-    navigation.navigate('MainTabs');
+    try {
+      // 先尝试将数据保存到本地存储作为备份
+      await api.local.saveUserPreferences(userData);
+      
+      // 尝试使用后端API保存用户能力
+      const isTaskServiceAvailable = await api.checkTaskServiceHealth();
+      
+      if (isTaskServiceAvailable) {
+        // 如果后端可用，使用API保存
+        try {
+          await api.task.saveUserPreferences(userData);
+          Alert.alert(
+            "保存成功",
+            "您的技能和偏好设置已保存，系统将根据您的偏好推荐合适的任务。",
+            [{ text: "确定", onPress: () => navigation.navigate('MainTabs') }]
+          );
+        } catch (apiError) {
+          console.error("API保存失败，使用本地保存:", apiError);
+          Alert.alert(
+            "本地保存成功",
+            "由于网络原因，您的设置已保存到本地。",
+            [{ text: "确定", onPress: () => navigation.navigate('MainTabs') }]
+          );
+        }
+      } else {
+        // 如果后端不可用，使用本地保存的数据
+        Alert.alert(
+          "本地保存成功",
+          "由于网络原因，您的设置已保存到本地。",
+          [{ text: "确定", onPress: () => navigation.navigate('MainTabs') }]
+        );
+      }
+    } catch (error) {
+      console.error("保存用户能力失败:", error);
+      
+      // 尝试一次最后的本地保存
+      try {
+        await AsyncStorage.setItem('user_preferences', JSON.stringify(userData));
+        Alert.alert(
+          "备份保存成功",
+          "您的设置已保存到本地。",
+          [{ text: "确定", onPress: () => navigation.navigate('MainTabs') }]
+        );
+      } catch (finalError) {
+        // 即使本地保存失败，也允许用户继续
+        Alert.alert(
+          "注意",
+          "无法保存您的偏好设置，但您仍可以继续使用应用。",
+          [{ text: "确定", onPress: () => navigation.navigate('MainTabs') }]
+        );
+      }
+    }
   };
 
   const renderCategoryTabs = () => (

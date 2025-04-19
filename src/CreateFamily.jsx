@@ -9,12 +9,14 @@ import {
   ScrollView,
   Modal,
   Alert,
+  Platform,
 } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
 import * as ImagePicker from 'react-native-image-picker';
 import { useFamily } from './store/FamilyContext';
 import { FamilyAvatars } from './assets/images';
+import { PermissionsAndroid } from 'react-native';
 
 const CreateFamily = ({ navigation }) => {
   const { createFamily } = useFamily();
@@ -42,20 +44,152 @@ const CreateFamily = ({ navigation }) => {
     setShowAvatarModal(true);
   };
 
-  const handleCustomImageUpload = () => {
-    ImagePicker.launchImageLibrary({
-      mediaType: 'photo',
-      includeBase64: true,
-      maxHeight: 300,
-      maxWidth: 300,
-    }, (response) => {
-      if (response.assets && response.assets.length > 0) {
-        const base64Image = response.assets[0].base64;
-        setAvatar(`data:image/jpeg;base64,${base64Image}`);
-        setAvatarSource({ uri: `data:image/jpeg;base64,${base64Image}` });
-        setShowAvatarModal(false);
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: '相机权限',
+            message: '应用需要访问您的相机以拍摄头像',
+            buttonNeutral: '稍后询问',
+            buttonNegative: '取消',
+            buttonPositive: '确定',
+          }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
       }
-    });
+    }
+    return true; // iOS会自动请求权限
+  };
+
+  const requestGalleryPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        let granted;
+        // 针对Android 13 (API 33)及以上版本的权限
+        if (Platform.Version >= 33) {
+          granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
+            {
+              title: '相册权限',
+              message: '应用需要访问您的相册以选择头像',
+              buttonNeutral: '稍后询问',
+              buttonNegative: '取消',
+              buttonPositive: '确定',
+            }
+          );
+        } else {
+          // 针对Android 13以下版本的权限
+          granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+            {
+              title: '相册权限',
+              message: '应用需要访问您的相册以选择头像',
+              buttonNeutral: '稍后询问',
+              buttonNegative: '取消',
+              buttonPositive: '确定',
+            }
+          );
+        }
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true; // iOS会自动请求权限
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const hasPermission = await requestCameraPermission();
+      if (!hasPermission) {
+        Alert.alert('权限被拒绝', '无法访问相机，请在设置中允许应用访问相机');
+        return;
+      }
+
+      const options = {
+        mediaType: 'photo',
+        includeBase64: true,
+        maxHeight: 300,
+        maxWidth: 300,
+        saveToPhotos: true,
+        quality: 0.8,
+      };
+
+      const response = await ImagePicker.launchCamera(options);
+      if (response.didCancel) {
+        console.log('用户取消了拍照');
+      } else if (response.errorCode) {
+        console.log('相机错误: ', response.errorMessage);
+        if (response.errorCode === 'camera_unavailable') {
+          Alert.alert('错误', '相机不可用，请确保设备有可用的相机');
+        } else if (response.errorCode === 'permission') {
+          Alert.alert('权限错误', '相机权限被拒绝，请在设置中允许应用访问相机');
+        } else {
+          Alert.alert('错误', '拍照时出错，请重试');
+        }
+      } else if (response.assets && response.assets.length > 0) {
+        const base64Image = response.assets[0].base64;
+        if (base64Image) {
+          setAvatar(`data:image/jpeg;base64,${base64Image}`);
+          setAvatarSource({ uri: `data:image/jpeg;base64,${base64Image}` });
+          setShowAvatarModal(false);
+        } else {
+          throw new Error('无法获取照片数据');
+        }
+      }
+    } catch (error) {
+      console.log('相机处理错误: ', error);
+      Alert.alert('错误', '无法使用相机，请重试');
+    }
+  };
+
+  const handleCustomImageUpload = async () => {
+    try {
+      const hasPermission = await requestGalleryPermission();
+      if (!hasPermission) {
+        Alert.alert('权限被拒绝', '无法访问相册，请在设置中允许应用访问相册');
+        return;
+      }
+
+      const options = {
+        mediaType: 'photo',
+        includeBase64: true,
+        maxHeight: 300,
+        maxWidth: 300,
+        selectionLimit: 1,
+        quality: 0.8,
+      };
+
+      const response = await ImagePicker.launchImageLibrary(options);
+      if (response.didCancel) {
+        console.log('用户取消了选择图片');
+      } else if (response.errorCode) {
+        console.log('ImagePicker 错误: ', response.errorMessage);
+        if (response.errorCode === 'permission') {
+          Alert.alert('权限错误', '相册权限被拒绝，请在设置中允许应用访问相册');
+        } else {
+          Alert.alert('错误', '选择图片时出错，请重试');
+        }
+      } else if (response.assets && response.assets.length > 0) {
+        const base64Image = response.assets[0].base64;
+        if (base64Image) {
+          setAvatar(`data:image/jpeg;base64,${base64Image}`);
+          setAvatarSource({ uri: `data:image/jpeg;base64,${base64Image}` });
+          setShowAvatarModal(false);
+        } else {
+          throw new Error('无法获取图片数据');
+        }
+      }
+    } catch (error) {
+      console.log('选择图片错误: ', error);
+      Alert.alert('错误', '无法访问相册，请确保已授权应用访问相册权限');
+    }
   };
 
   const selectDefaultAvatar = (item) => {
@@ -160,12 +294,21 @@ const CreateFamily = ({ navigation }) => {
               ))}
             </View>
 
-            <TouchableOpacity
-              style={styles.uploadButton}
-              onPress={handleCustomImageUpload}
-            >
-              <Text style={styles.uploadButtonText}>上传自定义头像</Text>
-            </TouchableOpacity>
+            <View style={styles.customOptionButtons}>
+              <TouchableOpacity
+                style={styles.customOptionButton}
+                onPress={handleTakePhoto}
+              >
+                <Text style={styles.customOptionButtonText}>拍摄照片</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.customOptionButton}
+                onPress={handleCustomImageUpload}
+              >
+                <Text style={styles.customOptionButtonText}>从相册选择</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -277,6 +420,23 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     color: '#6200ee',
     fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  customOptionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+  },
+  customOptionButton: {
+    backgroundColor: '#E6E6FA',
+    width: '48%',
+    paddingVertical: 15,
+    borderRadius: 25,
+  },
+  customOptionButtonText: {
+    color: '#6200ee',
+    fontSize: 14,
     fontWeight: 'bold',
     textAlign: 'center',
   },

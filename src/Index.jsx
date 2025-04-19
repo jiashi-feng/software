@@ -2,18 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
   Dimensions,
   ImageBackground,
   TouchableOpacity,
   Text,
-  Image,
 } from 'react-native';
 import {
-  Avatar,
   IconButton,
   Badge,
-  Card,
 } from 'react-native-paper';
 import { CommonImages, FamilyAvatars } from './assets/images';
 import LinearGradient from 'react-native-linear-gradient';

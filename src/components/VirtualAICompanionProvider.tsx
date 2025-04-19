@@ -36,16 +36,16 @@ const VirtualAICompanionProvider: React.FC<VirtualAICompanionProviderProps> = ({
   const [isVisible, setIsVisible] = useState(initialVisible);
   const [currentScreen, setCurrentScreen] = useState<string>('');
 
-  
+  // 判断是否应该显示AI伴侣组件
   const shouldShowCompanion = !EXCLUDED_SCREENS.includes(currentScreen);
 
-  
+  // 定义控制函数
   const showCompanion = () => setIsVisible(true);
   const hideCompanion = () => setIsVisible(false);
   const toggleCompanion = () => setIsVisible(prev => !prev);
   const setScreenName = (screenName: string) => setCurrentScreen(screenName);
 
-  
+  // 创建Context值
   const contextValue = {
     isVisible,
     showCompanion,

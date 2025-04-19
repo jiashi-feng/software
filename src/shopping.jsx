@@ -1,28 +1,25 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState,  useEffect } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   Image,
-  ImageBackground,
   Dimensions,
   Alert,
 } from 'react-native';
 import {
   Text,
-  Surface,
   Button,
   Chip,
-  IconButton,
   Dialog,
   Portal,
   Paragraph,
-  ActivityIndicator,
-  Snackbar,
+
 } from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
-import CustomIcon from './components/CustomIcon';
 import { CommonImages } from './assets/images';
+import { useAuth } from './store/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -148,12 +145,29 @@ const mockProducts = [
 ];
 
 const Shopping = ({ navigation }) => {
+  const { userInfo, updateUserInfo } = useAuth();
   const [selectedRange, setSelectedRange] = useState(pointsRanges[0]);
   const [selectedCategory, setSelectedCategory] = useState('全部');
   const [dialogVisible, setDialogVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [userPoints, setUserPoints] = useState(2580);
+  const [exchangeHistory, setExchangeHistory] = useState([]);
   const scrollViewRef = React.useRef(null);
+
+  // Load exchange history from AsyncStorage on component mount
+  useEffect(() => {
+    const loadExchangeHistory = async () => {
+      try {
+        const savedHistory = await AsyncStorage.getItem('exchangeHistory');
+        if (savedHistory) {
+          setExchangeHistory(JSON.parse(savedHistory));
+        }
+      } catch (error) {
+        console.error('Error loading exchange history:', error);
+      }
+    };
+
+    loadExchangeHistory();
+  }, []);
 
   const handleRangeSelect = (range) => {
     setSelectedRange(range);
@@ -189,11 +203,64 @@ const Shopping = ({ navigation }) => {
     setDialogVisible(true);
   };
 
+   const handleConfirmExchange = async () => {
+    const currentPoints = parseInt(userInfo?.points ?? '0', 10);
+    const cost = selectedProduct?.points;
+
+    if (selectedProduct && cost !== undefined && !isNaN(currentPoints) && currentPoints >= cost) {
+      const newPointsValue = currentPoints - cost;
+      
+      try {
+        if (typeof updateUserInfo === 'function') {
+          // Create new exchange record
+          const newHistoryItem = {
+            id: Date.now().toString(),
+            productName: selectedProduct.name,
+            productImage: selectedProduct.image,
+            exchangeDate: new Date().toISOString().split('T')[0],
+            points: cost,
+            status: '未使用',
+            orderNumber: `EX${Date.now()}`
+          };
+          
+          // Get existing history
+          const existingHistory = await AsyncStorage.getItem('exchangeHistory');
+          const history = existingHistory ? JSON.parse(existingHistory) : [];
+          
+          // Add new record and save
+          const updatedHistory = [newHistoryItem, ...history];
+          
+          // Update points and save exchange record
+          await Promise.all([
+            updateUserInfo({ points: String(newPointsValue) }),
+            AsyncStorage.setItem('exchangeHistory', JSON.stringify(updatedHistory))
+          ]);
+          
+          setDialogVisible(false);
+          Alert.alert('兑换成功', `您已成功兑换 ${selectedProduct?.name}！\n订单号：${newHistoryItem.orderNumber}`);
+        } else {
+          console.error("AuthContext does not provide 'updateUserInfo' function.");
+          Alert.alert('兑换失败', '积分更新功能未正确配置，请联系管理员。');
+        }
+      } catch (error) {
+        console.error("Failed to process exchange:", error);
+        Alert.alert('兑换失败', '处理兑换时出错，请稍后再试。');
+      }
+    } else if (selectedProduct) {
+      setDialogVisible(false);
+      if (isNaN(currentPoints)) {
+        Alert.alert('错误', '无法读取当前积分。');
+      } else {
+        Alert.alert('积分不足', '您的积分不足以兑换该商品');
+      }
+    } else {
+      setDialogVisible(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {}
       <View style={styles.fixedHeader}>
-        {}
         <View style={styles.banner}>
           <LinearGradient
             colors={['#9B7EDE', '#E6B3FF']}
@@ -206,11 +273,10 @@ const Shopping = ({ navigation }) => {
           </LinearGradient>
         </View>
 
-        {}
         <View style={styles.pointsSection}>
           <View style={styles.pointsDisplay}>
             <Text style={styles.currencySymbol}>🪙</Text>
-            <Text style={styles.pointsText}>积分{userPoints}</Text>
+            <Text style={styles.pointsText}>积分{userInfo?.points || '0'}</Text>
           </View>
           <Button
             mode="contained"
@@ -221,7 +287,6 @@ const Shopping = ({ navigation }) => {
           </Button>
         </View>
 
-        {}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -246,7 +311,6 @@ const Shopping = ({ navigation }) => {
         </ScrollView>
       </View>
 
-      {}
       <ScrollView
         ref={scrollViewRef}
         style={styles.content}
@@ -274,11 +338,10 @@ const Shopping = ({ navigation }) => {
                 <Text style={styles.exchangeCount}>
                   已兑换 {product.exchangeCount} 次
                 </Text>
-                {}
                 <View style={styles.productBottom}>
                   <View style={styles.pointsContainer}>
                     <Text style={styles.smallCurrencySymbol}>🪙</Text>
-                    <Text style={styles.productPoints}>积分{product.points}</Text>
+                    <Text style={styles.productPoints}>积分{product.points || '0'}</Text>
                   </View>
                   <Button
                     mode="contained"
@@ -296,7 +359,6 @@ const Shopping = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {}
       <Portal>
         <Dialog
           visible={dialogVisible}
@@ -308,25 +370,14 @@ const Shopping = ({ navigation }) => {
               确定要使用 {selectedProduct?.points} 积分兑换 {selectedProduct?.name} 吗？
             </Paragraph>
             <Paragraph style={{ marginTop: 8, color: COLORS.primary }}>
-              当前积分：{userPoints}
+              当前积分：{userInfo?.points || '0'}
             </Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setDialogVisible(false)}>取消</Button>
             <Button
               mode="contained"
-              onPress={() => {
-                if (userPoints >= selectedProduct?.points) {
-                  
-                  setUserPoints(prevPoints => prevPoints - selectedProduct?.points);
-                  
-                  setDialogVisible(false);
-                  
-                } else {
-                  
-                  Alert.alert('积分不足', '您的积分不足以兑换该商品');
-                }
-              }}
+              onPress={handleConfirmExchange}
             >
               确认兑换
             </Button>

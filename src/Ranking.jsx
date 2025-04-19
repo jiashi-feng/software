@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,65 +13,85 @@ import {
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CommonImages } from './assets/images';
-
-const mockRankings = {
-  weekly: [
-    {
-      id: 1,
-      name: '妈妈',
-      avatar: null,
-      points: 1280,
-      rank: 1,
-      change: 2,
-    },
-    {
-      id: 2,
-      name: '爸爸',
-      avatar: null,
-      points: 980,
-      rank: 2,
-      change: -1,
-    },
-    {
-      id: 3,
-      name: '我',
-      avatar: null,
-      points: 850,
-      rank: 3,
-      change: 1,
-    },
-  ],
-  monthly: [
-    {
-      id: 1,
-      name: '爸爸',
-      avatar: null,
-      points: 5200,
-      rank: 1,
-      change: 0,
-    },
-    {
-      id: 2,
-      name: '妈妈',
-      avatar: null,
-      points: 4800,
-      rank: 2,
-      change: 1,
-    },
-    {
-      id: 3,
-      name: '我',
-      avatar: null,
-      points: 3600,
-      rank: 3,
-      change: -1,
-    },
-  ],
-};
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Ranking = () => {
   const [timeRange, setTimeRange] = useState('weekly');
+  const [familyMembers, setFamilyMembers] = useState([]);
+  const [myPoints, setMyPoints] = useState(0);
+  const [completedTasks, setCompletedTasks] = useState(0);
   const theme = useTheme();
+
+  // Load family members and points from AsyncStorage
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Load family members
+        const savedMembers = await AsyncStorage.getItem('chatMembers');
+        if (savedMembers) {
+          const members = JSON.parse(savedMembers);
+          setFamilyMembers(members);
+        }
+
+        // Load my points and sync with personal points
+        const [savedPoints, personalPoints] = await Promise.all([
+          AsyncStorage.getItem('myPoints'),
+          AsyncStorage.getItem('userPoints')
+        ]);
+
+        let pointsToUse = 0;
+        if (savedPoints && personalPoints) {
+          // Use the larger value between ranking points and personal points
+          const rankingPoints = parseInt(savedPoints, 10);
+          const userPoints = parseInt(personalPoints, 10);
+          pointsToUse = Math.max(rankingPoints, userPoints);
+          
+          // If ranking points are lower, update them
+          if (rankingPoints < userPoints) {
+            await AsyncStorage.setItem('myPoints', String(userPoints));
+          }
+        } else if (personalPoints) {
+          pointsToUse = parseInt(personalPoints, 10);
+          await AsyncStorage.setItem('myPoints', personalPoints);
+        } else if (savedPoints) {
+          pointsToUse = parseInt(savedPoints, 10);
+        }
+        
+        setMyPoints(pointsToUse);
+
+        // Load completed tasks count
+        const savedTasks = await AsyncStorage.getItem('familyTasks');
+        if (savedTasks) {
+          const tasks = JSON.parse(savedTasks);
+          const completedCount = tasks.filter(task => task.completed).length;
+          setCompletedTasks(completedCount);
+        }
+      } catch (error) {
+        console.error('Error loading ranking data:', error);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Listen for task completion updates
+  useEffect(() => {
+    const checkTaskUpdates = async () => {
+      try {
+        const savedTasks = await AsyncStorage.getItem('familyTasks');
+        if (savedTasks) {
+          const tasks = JSON.parse(savedTasks);
+          const completedCount = tasks.filter(task => task.completed).length;
+          setCompletedTasks(completedCount);
+        }
+      } catch (error) {
+        console.error('Error checking task updates:', error);
+      }
+    };
+
+    const interval = setInterval(checkTaskUpdates, 1000); // Check every second
+    return () => clearInterval(interval);
+  }, []);
 
   const getRankColor = (rank) => {
     switch (rank) {
@@ -95,6 +115,21 @@ const Ranking = () => {
     return null;
   };
 
+  // Calculate rankings based on family members
+  const calculateRankings = () => {
+    const rankings = familyMembers.map((member, index) => ({
+      id: member.id,
+      name: member.name,
+      avatar: member.avatar,
+      points: member.id === 'currentUser' ? myPoints : 0,
+      rank: index + 1,
+      change: 0,
+    }));
+
+    // Sort by points in descending order
+    return rankings.sort((a, b) => b.points - a.points);
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Surface style={styles.header}>
@@ -111,7 +146,7 @@ const Ranking = () => {
       </Surface>
 
       <View style={styles.rankingsContainer}>
-        {mockRankings[timeRange].map((user, index) => (
+        {calculateRankings().map((user, index) => (
           <Surface key={user.id} style={styles.rankingCard}>
             <View style={styles.rankNumber}>
               <Text style={[styles.rankText, { color: getRankColor(user.rank) }]}>
@@ -150,16 +185,16 @@ const Ranking = () => {
         <Text style={styles.statsTitle}>本周统计</Text>
         <View style={styles.statsGrid}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>1280</Text>
+            <Text style={styles.statNumber}>{myPoints}</Text>
             <Text style={styles.statLabel}>我的积分</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>3</Text>
+            <Text style={styles.statNumber}>{completedTasks}</Text>
             <Text style={styles.statLabel}>完成任务</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>2</Text>
-            <Text style={styles.statLabel}>排名上升</Text>
+            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statLabel}>排名变化</Text>
           </View>
         </View>
       </Surface>

@@ -3,12 +3,22 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "start": "react-native start",
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "backend": "node server/index.js",
+    "dev-backend": "cd server && yarn dev"
   },
+  "keywords": [
+    "react-native",
+    "family",
+    "task",
+    "management"
+  ],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
     "@alicloud/openapi-client": "^0.4.13",
     "@alicloud/tea-util": "^1.4.10",

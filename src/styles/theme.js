@@ -29,20 +29,6 @@ export const themeGradients = {
   headerGradient: ['#4A6FA5', '#3A5F95'],
 };
 
-export const categoryIcons = {
-  '全部': 'view-grid',
-  '清洁用品': 'spray-bottle',
-  '厨房用品': 'silverware-fork-knife',
-  '收纳工具': 'box-shadow',
-  '生活用品': 'home-variant',
-  '其他': 'dots-horizontal-circle',
-};
-
-export const orderStatusIcons = {
-  '待发货': 'clock-outline',
-  '已发货': 'truck-delivery-outline',
-  '已完成': 'check-circle-outline',
-};
 
 export const productImages = {
   product1: require('../assets/products/cleaning_kit.jpg'),

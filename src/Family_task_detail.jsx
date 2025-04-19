@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Text as RNText,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -18,38 +19,12 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import { useAuth } from './store/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FamilyTaskDetail = ({ navigation }) => {
-  const [tasks, setTasks] = useState([
-    { 
-      id: 1, 
-      content: '整理杂物', 
-      completed: false,
-      points: 30,
-      deadline: '今天 18:00',
-      assignee: '妈妈',
-      animationValue: new Animated.Value(0),
-    },
-    { 
-      id: 2, 
-      content: '修理水管', 
-      completed: false,
-      points: 40,
-      deadline: '今天 20:00',
-      assignee: '爸爸',
-      animationValue: new Animated.Value(0),
-    },
-    { 
-      id: 3, 
-      content: '打扫卫生间', 
-      completed: false,
-      points: 25,
-      deadline: '明天 10:00',
-      assignee: '我',
-      animationValue: new Animated.Value(0),
-    },
-  ]);
-  
+  const { userInfo, updateUserInfo } = useAuth();
+  const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState(null);
@@ -58,52 +33,150 @@ const FamilyTaskDetail = ({ navigation }) => {
   const [showSubtitle, setShowSubtitle] = useState(false);
   const confettiRef = useRef(null);
 
-  const familyMembers = ['爸爸', '妈妈', '我'];
+  const familyMembers = ['我'];
 
-  const handleTaskToggle = (taskId) => {
-    const updatedTasks = tasks.map(task => {
-      if (task.id === taskId) {
-        const newCompletedState = !task.completed;
-        if (newCompletedState) {
-          setShowConfetti(true);
-          setShowSubtitle(true);
-          Animated.timing(task.animationValue, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }).start(() => {
-            task.animationValue.setValue(0);
-          });
-
-          setTimeout(() => {
-            setShowSubtitle(false);
-          }, 3000);
+  // Load tasks from AsyncStorage on component mount
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        const savedTasks = await AsyncStorage.getItem('familyTasks');
+        if (savedTasks) {
+          const parsedTasks = JSON.parse(savedTasks);
+          // Recreate Animated.Value for each task
+          const tasksWithAnimation = parsedTasks.map(task => ({
+            ...task,
+            animationValue: new Animated.Value(0)
+          }));
+          setTasks(tasksWithAnimation);
+        } else {
+          // Initialize with default tasks if no saved tasks
+          const defaultTasks = [
+            {
+              id: 1,
+              content: '整理杂物',
+              completed: false,
+              points: 30,
+              deadline: '今天 18:00',
+              assignee: '妈妈',
+              animationValue: new Animated.Value(0),
+            },
+            {
+              id: 2,
+              content: '修理水管',
+              completed: false,
+              points: 40,
+              deadline: '今天 20:00',
+              assignee: '爸爸',
+              animationValue: new Animated.Value(0),
+            },
+            {
+              id: 3,
+              content: '打扫卫生间',
+              completed: false,
+              points: 25,
+              deadline: '明天 10:00',
+              assignee: '我',
+              animationValue: new Animated.Value(0),
+            },
+          ];
+          setTasks(defaultTasks);
+          await AsyncStorage.setItem('familyTasks', JSON.stringify(defaultTasks));
         }
-        return { ...task, completed: newCompletedState };
+      } catch (error) {
+        console.error('Error loading family tasks:', error);
       }
-      return task;
-    });
+    };
+
+    loadTasks();
+  }, []);
+
+  const handleTaskToggle = async (taskId) => {
+    const updatePoints = async (points) => {
+      try {
+        await updateUserInfo({ points: String(points) });
+        // Save points to both ranking and personal storage
+        await Promise.all([
+          AsyncStorage.setItem('myPoints', String(points)),
+          AsyncStorage.setItem('userPoints', String(points))
+        ]);
+      } catch (error) {
+        console.error('Failed to update points:', error);
+        Alert.alert('更新失败', '积分更新失败，请重试');
+        throw error;
+      }
+    };
+
+    // Find the task first
+    const taskToUpdate = tasks.find(task => task.id === taskId);
+    if (!taskToUpdate) return;
+
+    const newCompletedState = !taskToUpdate.completed;
+    
+    // Handle points update if task is being completed
+    if (newCompletedState) {
+      const currentPoints = parseInt(userInfo?.points ?? '0', 10);
+      const newPoints = currentPoints + taskToUpdate.points;
+      
+      try {
+        await updatePoints(newPoints);
+        
+        setShowConfetti(true);
+        setShowSubtitle(true);
+        Animated.timing(taskToUpdate.animationValue, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start(() => {
+          taskToUpdate.animationValue.setValue(0);
+        });
+
+        setTimeout(() => {
+          setShowSubtitle(false);
+        }, 3000);
+      } catch (error) {
+        return; // Don't update task if points update fails
+      }
+    }
+
+    // Update the tasks array
+    const updatedTasks = tasks.map(task => 
+      task.id === taskId 
+        ? { ...task, completed: newCompletedState }
+        : task
+    );
 
     setTasks(updatedTasks);
+    try {
+      await AsyncStorage.setItem('familyTasks', JSON.stringify(updatedTasks));
+    } catch (error) {
+      console.error('Error saving family tasks:', error);
+    }
   };
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (newTask.trim() && selectedAssignee) {
-      setTasks([
-        ...tasks,
-        {
-          id: Date.now(),
-          content: newTask.trim(),
-          completed: false,
-          points: 20,
-          deadline: '今天 20:00',
-          assignee: selectedAssignee,
-          animationValue: new Animated.Value(0),
-        }
-      ]);
+      const newTaskObj = {
+        id: Date.now(),
+        content: newTask.trim(),
+        completed: false,
+        points: 20,
+        deadline: '今天 20:00',
+        assignee: selectedAssignee,
+        animationValue: new Animated.Value(0),
+      };
+      
+      const updatedTasks = [...tasks, newTaskObj];
+      setTasks(updatedTasks);
       setNewTask('');
       setSelectedAssignee(null);
       setIsAddingTask(false);
+      
+      // Save updated tasks to AsyncStorage
+      try {
+        await AsyncStorage.setItem('familyTasks', JSON.stringify(updatedTasks));
+      } catch (error) {
+        console.error('Error saving family tasks:', error);
+      }
     }
   };
 

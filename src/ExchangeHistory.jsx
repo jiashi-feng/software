@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   Image,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -20,6 +21,7 @@ import {
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ProductImages, CommonImages } from './assets/images';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const COLORS = {
   primary: '#4A6FA5',
@@ -36,9 +38,8 @@ const COLORS = {
 };
 
 const ORDER_STATUS_ICONS = {
-  '待发货': { icon: 'clock-time-four', color: COLORS.warning },
-  '已发货': { icon: 'truck-delivery', color: COLORS.info },
-  '已完成': { icon: 'check-circle', color: COLORS.success },
+  '未使用': { icon: 'clock-time-four', color: COLORS.warning },
+  '已使用': { icon: 'check-circle', color: COLORS.success },
 };
 
 const mockRecords = [
@@ -48,11 +49,8 @@ const mockRecords = [
     productImage: ProductImages.cleaningKit,
     exchangeDate: '2024-06-10',
     points: 500,
-    status: '已完成',
+    status: '已使用',
     orderNumber: 'EX202406100001',
-    address: '北京市海淀区中关村大街1号',
-    trackingNumber: 'SF1234567890',
-    logistics: '顺丰速运',
   },
   {
     id: '2',
@@ -60,11 +58,8 @@ const mockRecords = [
     productImage: ProductImages.storageBox,
     exchangeDate: '2024-06-05',
     points: 300,
-    status: '已发货',
+    status: '未使用',
     orderNumber: 'EX202406050002',
-    address: '北京市海淀区中关村大街1号',
-    trackingNumber: 'YT0987654321',
-    logistics: '圆通速递',
   },
   {
     id: '3',
@@ -72,11 +67,8 @@ const mockRecords = [
     productImage: ProductImages.kitchenSet,
     exchangeDate: '2024-06-01',
     points: 800,
-    status: '待发货',
+    status: '未使用',
     orderNumber: 'EX202406010003',
-    address: '北京市海淀区中关村大街1号',
-    trackingNumber: '-',
-    logistics: '-',
   },
   {
     id: '4',
@@ -84,31 +76,42 @@ const mockRecords = [
     productImage: ProductImages.kitchenGloves,
     exchangeDate: '2024-05-20',
     points: 150,
-    status: '已完成',
+    status: '已使用',
     orderNumber: 'EX202405200004',
-    address: '北京市海淀区中关村大街1号',
-    trackingNumber: 'ZT5678901234',
-    logistics: '中通快递',
   },
 ];
 
-const ExchangeHistory = () => {
-  const [selectedStatus, setSelectedStatus] = useState('全部');
+const ExchangeHistory = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedItem, setExpandedItem] = useState(null);
   const [dialogVisible, setDialogVisible] = useState(false);
-  const [logisticsDialogVisible, setLogisticsDialogVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [exchangeRecords, setExchangeRecords] = useState([]);
 
-  const statusFilters = ['全部', '待发货', '已发货', '已完成'];
+  // Load exchange records from AsyncStorage
+  useEffect(() => {
+    const loadExchangeRecords = async () => {
+      try {
+        const savedRecords = await AsyncStorage.getItem('exchangeHistory');
+        if (savedRecords) {
+          setExchangeRecords(JSON.parse(savedRecords));
+        }
+      } catch (error) {
+        console.error('Error loading exchange records:', error);
+      }
+    };
 
-  
-  const filteredRecords = mockRecords.filter(record => {
-    const matchesStatus = selectedStatus === '全部' || record.status === selectedStatus;
+    loadExchangeRecords();
+    // Set up interval to check for new records
+    const interval = setInterval(loadExchangeRecords, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const filteredRecords = exchangeRecords.filter(record => {
     const matchesSearch = !searchQuery || 
       record.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       record.orderNumber.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+    return matchesSearch;
   });
 
   const handleToggleExpand = (id) => {
@@ -120,18 +123,24 @@ const ExchangeHistory = () => {
     setDialogVisible(true);
   };
 
-  const confirmReceived = () => {
-    
-    setDialogVisible(false);
-    
-    setTimeout(() => {
-      alert('已确认收货');
-    }, 500);
-  };
+  const confirmReceived = async () => {
+    if (selectedRecord) {
+      const updatedRecords = exchangeRecords.map(record => 
+        record.id === selectedRecord.id 
+          ? { ...record, status: '已使用' }
+          : record
+      );
 
-  const handleViewLogistics = (record) => {
-    setSelectedRecord(record);
-    setLogisticsDialogVisible(true);
+      try {
+        await AsyncStorage.setItem('exchangeHistory', JSON.stringify(updatedRecords));
+        setExchangeRecords(updatedRecords);
+        setDialogVisible(false);
+        Alert.alert('成功', '已确认使用');
+      } catch (error) {
+        console.error('Error updating record status:', error);
+        Alert.alert('错误', '更新状态失败，请重试');
+      }
+    }
   };
 
   return (
@@ -144,29 +153,6 @@ const ExchangeHistory = () => {
           value={searchQuery}
           style={styles.searchBar}
         />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.statusFiltersContainer}
-          contentContainerStyle={styles.statusFiltersContent}
-        >
-          {statusFilters.map(status => (
-            <Chip
-              key={status}
-              selected={selectedStatus === status}
-              onPress={() => setSelectedStatus(status)}
-              style={[
-                styles.statusChip,
-                selectedStatus === status && styles.statusChipSelected
-              ]}
-              selectedColor="#fff"
-              textStyle={selectedStatus === status ? styles.statusChipTextSelected : styles.statusChipText}
-              icon={status !== '全部' ? ORDER_STATUS_ICONS[status].icon : 'filter-variant'}
-            >
-              {status}
-            </Chip>
-          ))}
-        </ScrollView>
       </Surface>
 
       <ScrollView style={styles.recordsContainer}>
@@ -198,9 +184,16 @@ const ExchangeHistory = () => {
                   </View>
                 </View>
                 <View style={styles.statusContainer}>
-                  <View style={[styles.statusBadge, { backgroundColor: ORDER_STATUS_ICONS[record.status].color }]}>
-                    <Icon name={ORDER_STATUS_ICONS[record.status].icon} size={14} color="#fff" />
-                    <Text style={styles.statusText}>{record.status}</Text>
+                  <View style={[
+                    styles.statusBadge, 
+                    { backgroundColor: ORDER_STATUS_ICONS[record.status]?.color || ORDER_STATUS_ICONS['已使用'].color }
+                  ]}>
+                    <Icon 
+                      name={ORDER_STATUS_ICONS[record.status]?.icon || ORDER_STATUS_ICONS['已使用'].icon} 
+                      size={14} 
+                      color="#fff" 
+                    />
+                    <Text style={styles.statusText}>{record.status || '已使用'}</Text>
                   </View>
                   <Icon
                     name={expandedItem === record.id ? 'chevron-up' : 'chevron-down'}
@@ -222,22 +215,22 @@ const ExchangeHistory = () => {
                     descriptionStyle={styles.detailDescription}
                   />
                   <List.Item
-                    title="收货地址"
-                    description={record.address}
-                    left={props => <List.Icon {...props} icon="map-marker" color={COLORS.primary} />}
+                    title="兑换日期"
+                    description={record.exchangeDate}
+                    left={props => <List.Icon {...props} icon="calendar" color={COLORS.primary} />}
                     titleStyle={styles.detailTitle}
                     descriptionStyle={styles.detailDescription}
                   />
                   <List.Item
-                    title="物流信息"
-                    description={record.trackingNumber !== '-' ? `${record.logistics} ${record.trackingNumber}` : '暂无物流信息'}
-                    left={props => <List.Icon {...props} icon="truck" color={COLORS.primary} />}
+                    title="消耗积分"
+                    description={`${record.points} 积分`}
+                    left={props => <List.Icon {...props} icon="coin" color={COLORS.primary} />}
                     titleStyle={styles.detailTitle}
                     descriptionStyle={styles.detailDescription}
                   />
 
                   <View style={styles.actionsContainer}>
-                    {record.status === '已发货' && (
+                    {record.status === '未使用' && (
                       <Button
                         mode="contained"
                         onPress={() => handleConfirmReceipt(record)}
@@ -245,18 +238,7 @@ const ExchangeHistory = () => {
                         color={COLORS.success}
                         icon="check"
                       >
-                        确认收货
-                      </Button>
-                    )}
-                    {record.status !== '待发货' && (
-                      <Button
-                        mode="outlined"
-                        onPress={() => handleViewLogistics(record)}
-                        style={styles.actionButton}
-                        color={COLORS.primary}
-                        icon="truck-fast"
-                      >
-                        查看物流
+                        确认使用
                       </Button>
                     )}
                   </View>
@@ -271,154 +253,36 @@ const ExchangeHistory = () => {
               style={styles.emptyImage}
               resizeMode="contain"
             />
-            <Text style={styles.emptyText}>暂无符合条件的兑换记录</Text>
+            <Text style={styles.emptyTitle}>暂无兑换记录</Text>
+            <Text style={styles.emptyText}>
+              快去积分商城兑换心仪的奖励吧！
+            </Text>
+            <Button
+              mode="contained"
+              onPress={() => navigation.navigate('Shopping')}
+              style={styles.emptyButton}
+              color={COLORS.primary}
+            >
+              去兑换
+            </Button>
           </View>
         )}
       </ScrollView>
 
-      {}
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>确认收货</Dialog.Title>
+          <Dialog.Title>确认使用</Dialog.Title>
           <Dialog.Content>
             <Paragraph>
-              您确定已收到商品"{selectedRecord?.productName}"吗？
+              您确定已使用"{selectedRecord?.productName}"吗？
             </Paragraph>
             <Paragraph>
-              确认收货后，订单状态将变更为"已完成"，且不可撤销。
+              确认后状态将变更为"已使用"，且不可撤销。
             </Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setDialogVisible(false)} color={COLORS.subtext}>取消</Button>
-            <Button onPress={confirmReceived} color={COLORS.success}>确认收货</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
-      {}
-      <Portal>
-        <Dialog visible={logisticsDialogVisible} onDismiss={() => setLogisticsDialogVisible(false)}>
-          <Dialog.Title>物流详情</Dialog.Title>
-          <Dialog.Content>
-            {selectedRecord && (
-              <>
-                <View style={styles.logisticsHeader}>
-                  <Image 
-                    source={selectedRecord.productImage}
-                    style={styles.logisticsProductImage}
-                  />
-                  <View style={styles.logisticsProductInfo}>
-                    <Text style={styles.logisticsProductName}>
-                      {selectedRecord.productName}
-                    </Text>
-                    <Text style={styles.logisticsOrderNumber}>
-                      订单编号: {selectedRecord.orderNumber}
-                    </Text>
-                  </View>
-                </View>
-                
-                <Divider style={styles.logisticsDivider} />
-                
-                <View style={styles.logisticsInfo}>
-                  <View style={styles.logisticsRow}>
-                    <Text style={styles.logisticsLabel}>物流公司:</Text>
-                    <Text style={styles.logisticsValue}>{selectedRecord.logistics}</Text>
-                  </View>
-                  <View style={styles.logisticsRow}>
-                    <Text style={styles.logisticsLabel}>运单编号:</Text>
-                    <Text style={styles.logisticsValue}>{selectedRecord.trackingNumber}</Text>
-                  </View>
-                </View>
-                
-                <Divider style={styles.logisticsDivider} />
-                
-                {}
-                <View style={styles.trackingInfo}>
-                  <Text style={styles.trackingTitle}>物流追踪</Text>
-                  
-                  <View style={styles.trackingTimeline}>
-                    <View style={styles.trackingItem}>
-                      <View style={styles.timelineNodeContainer}>
-                        <View style={[styles.timelineNode, styles.currentNode]} />
-                        <View style={styles.timelineLine} />
-                      </View>
-                      <View style={styles.trackingContent}>
-                        <Text style={styles.trackingAction}>
-                          {selectedRecord.status === '已完成' ? '已签收' : '运输中'}
-                        </Text>
-                        <Text style={styles.trackingLocation}>
-                          {selectedRecord.address}
-                        </Text>
-                        <Text style={styles.trackingTime}>
-                          {selectedRecord.status === '已完成' 
-                            ? `${selectedRecord.exchangeDate} 15:20:33` 
-                            : '2023-04-30 09:45:12'}
-                        </Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.trackingItem}>
-                      <View style={styles.timelineNodeContainer}>
-                        <View style={styles.timelineNode} />
-                        <View style={styles.timelineLine} />
-                      </View>
-                      <View style={styles.trackingContent}>
-                        <Text style={styles.trackingAction}>
-                          运输中
-                        </Text>
-                        <Text style={styles.trackingLocation}>
-                          北京市海淀区分拣中心
-                        </Text>
-                        <Text style={styles.trackingTime}>
-                          2023-04-29 18:30:45
-                        </Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.trackingItem}>
-                      <View style={styles.timelineNodeContainer}>
-                        <View style={styles.timelineNode} />
-                        <View style={styles.timelineLine} />
-                      </View>
-                      <View style={styles.trackingContent}>
-                        <Text style={styles.trackingAction}>
-                          已发货
-                        </Text>
-                        <Text style={styles.trackingLocation}>
-                          北京市仓库
-                        </Text>
-                        <Text style={styles.trackingTime}>
-                          2023-04-28 10:15:22
-                        </Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.trackingItem}>
-                      <View style={styles.timelineNodeContainer}>
-                        <View style={styles.timelineNode} />
-                        <View style={[styles.timelineLine, styles.lastLine]} />
-                      </View>
-                      <View style={styles.trackingContent}>
-                        <Text style={styles.trackingAction}>
-                          订单已确认
-                        </Text>
-                        <Text style={styles.trackingLocation}>
-                          系统自动确认
-                        </Text>
-                        <Text style={styles.trackingTime}>
-                          {selectedRecord.exchangeDate} 00:00:00
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </>
-            )}
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setLogisticsDialogVisible(false)} color={COLORS.primary}>
-              关闭
-            </Button>
+            <Button onPress={confirmReceived} color={COLORS.success}>确认使用</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -449,28 +313,7 @@ const styles = StyleSheet.create({
     elevation: 0,
     backgroundColor: COLORS.background,
     borderRadius: 8,
-    marginBottom: 12,
     height: 40,
-  },
-  statusFiltersContainer: {
-    marginBottom: 4,
-  },
-  statusFiltersContent: {
-    paddingRight: 8,
-  },
-  statusChip: {
-    marginRight: 8,
-    backgroundColor: '#fff',
-    borderColor: COLORS.border,
-  },
-  statusChipSelected: {
-    backgroundColor: COLORS.primary,
-  },
-  statusChipText: {
-    color: COLORS.text,
-  },
-  statusChipTextSelected: {
-    color: '#fff',
   },
   recordsContainer: {
     padding: 16,
@@ -562,128 +405,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyContainer: {
+    flex: 1,
     padding: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 400,
   },
   emptyImage: {
-    width: 120,
-    height: 120,
-    marginBottom: 16,
+    width: 150,
+    height: 150,
+    marginBottom: 24,
   },
-  emptyText: {
-    color: COLORS.subtext,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  logisticsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  logisticsProductImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: COLORS.background,
-  },
-  logisticsProductInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  logisticsProductName: {
-    fontSize: 16,
+  emptyTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: 4,
-  },
-  logisticsOrderNumber: {
-    fontSize: 14,
-    color: COLORS.subtext,
-  },
-  logisticsDivider: {
-    marginVertical: 12,
-  },
-  logisticsInfo: {
-    backgroundColor: COLORS.background,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  logisticsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 8,
   },
-  logisticsLabel: {
+  emptyText: {
     fontSize: 14,
     color: COLORS.subtext,
+    textAlign: 'center',
+    marginBottom: 24,
   },
-  logisticsValue: {
-    fontSize: 14,
-    color: COLORS.text,
-    fontWeight: 'bold',
-  },
-  trackingInfo: {
-    marginTop: 8,
-  },
-  trackingTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: 16,
-  },
-  trackingTimeline: {
-    paddingLeft: 8,
-  },
-  trackingItem: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  timelineNodeContainer: {
-    width: 20,
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  timelineNode: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.border,
-    zIndex: 2,
-  },
-  currentNode: {
-    backgroundColor: COLORS.primary,
-  },
-  timelineLine: {
-    position: 'absolute',
-    top: 12,
-    left: 9.5,
-    width: 1,
-    height: '100%',
-    backgroundColor: COLORS.border,
-    zIndex: 1,
-  },
-  lastLine: {
-    display: 'none',
-  },
-  trackingContent: {
-    flex: 1,
-  },
-  trackingAction: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  trackingLocation: {
-    fontSize: 14,
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  trackingTime: {
-    fontSize: 12,
-    color: COLORS.subtext,
+  emptyButton: {
+    borderRadius: 20,
+    paddingHorizontal: 24,
   },
 });
 

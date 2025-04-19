@@ -57,4 +57,7 @@ declare module '@alicloud/tea-util' {
   export class RuntimeOptions {
     constructor(options?: any);
   }
-} 
+}
+
+// 声明alibabacloud-nls模块以解决TypeScript编译错误
+declare module 'alibabacloud-nls'; 

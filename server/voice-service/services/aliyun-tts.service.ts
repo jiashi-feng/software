@@ -107,16 +107,16 @@ class AliyunTTSService {
         console.log('语音合成参数:', params);
 
         // 设置事件处理器
-        tts.on('meta', (msg) => {
+        tts.on('meta', (msg: any) => {
           console.log('接收到元信息:', msg);
         });
 
-        tts.on('data', (data) => {
+        tts.on('data', (data: any) => {
           console.log(`接收到音频数据: ${data.length} 字节`);
           fileStream.write(data, 'binary');
         });
 
-        tts.on('completed', async (msg) => {
+        tts.on('completed', async (msg: any) => {
           console.log('语音合成完成:', msg);
           fileStream.end();
           
@@ -138,7 +138,7 @@ class AliyunTTSService {
           console.log('连接已关闭');
         });
 
-        tts.on('failed', (msg) => {
+        tts.on('failed', (msg: any) => {
           console.error('语音合成失败:', msg);
           fileStream.end();
           fs.unlink(tempFilePath, () => {});
@@ -147,7 +147,7 @@ class AliyunTTSService {
 
         // 开始合成
         tts.start(params, true, 6000)
-          .catch(error => {
+          .catch((error: any) => {
             console.error('启动语音合成失败:', error);
             fileStream.end();
             fs.unlink(tempFilePath, () => {});

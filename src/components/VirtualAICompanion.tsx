@@ -19,7 +19,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useVirtualAICompanion } from './VirtualAICompanionProvider';
-import { MixedVoiceService } from '../services/MixedVoiceService';
+import api from '../services/api';
 import {CommonImages} from '../assets/images';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -98,7 +98,7 @@ const VirtualAICompanion: React.FC<VirtualAICompanionProps> = ({
         );
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
-        
+        console.error('请求麦克风权限失败:', err);
         return false;
       }
     }
@@ -113,13 +113,24 @@ const VirtualAICompanion: React.FC<VirtualAICompanionProps> = ({
     
     setIsListening(true);
     try {
-      
+      // 短暂延迟以确保UI更新
       await new Promise(resolve => setTimeout(resolve, 100));
       
+      // 检查麦克风权限
+      const hasPermission = await requestMicrophonePermission();
+      if (!hasPermission) {
+        console.error('没有麦克风权限');
+        setIsListening(false);
+        return;
+      }
       
-      await MixedVoiceService.startRecording();
+      // 检查语音服务是否可用
+      const isVoiceServiceAvailable = await api.checkVoiceServiceHealth();
+      
+      // 开始录音
+      await api.audio.startRecording();
     } catch (error) {
-      
+      console.error('启动语音识别失败:', error);
       setIsListening(false);
     }
   };
@@ -131,15 +142,36 @@ const VirtualAICompanion: React.FC<VirtualAICompanionProps> = ({
     if (!isListening) return;
     
     try {
+      // 检查语音服务是否可用
+      const isVoiceServiceAvailable = await api.checkVoiceServiceHealth();
+      let recognizedText = '';
       
-      const recognizedText = await MixedVoiceService.stopRecording();
+      if (isVoiceServiceAvailable) {
+        // 停止录音并获取音频数据
+        const audioData = await api.audio.stopRecording();
+        
+        // 如果有音频数据，发送到API服务进行语音识别
+        if (audioData) {
+          try {
+            const response = await api.voice.speechToText(audioData);
+            recognizedText = response.text || '';
+          } catch (apiError) {
+            console.error('API语音识别失败:', apiError);
+            // 如果API识别失败，使用本地结果
+            recognizedText = audioData;
+          }
+        }
+      } else {
+        // 如果API服务不可用，使用本地识别
+        recognizedText = await api.audio.stopRecording();
+      }
       
       if (recognizedText) {
         setSpeechText(recognizedText);
         handleSpeechResult(recognizedText);
       }
     } catch (error) {
-      
+      console.error('语音识别处理失败:', error);
     } finally {
       setIsListening(false);
     }
@@ -152,15 +184,38 @@ const VirtualAICompanion: React.FC<VirtualAICompanionProps> = ({
   const speakResponse = async (text: string) => {
     if (text && text.trim()) {
       try {
-        await MixedVoiceService.speak(text, {
-          voice: 'xiaoyan',
-          speed: 0,
-          volume: 80,
-          pitch: 5,
-          region: 'shanghai'
-        });
-      } catch (error) {
+        // 检查语音服务是否可用
+        const isVoiceServiceAvailable = await api.checkVoiceServiceHealth();
         
+        if (isVoiceServiceAvailable) {
+          const options = {
+            voice: 'xiaoyan',
+            speed: 0,
+            volume: 80,
+            pitch: 5,
+            region: 'shanghai'
+          };
+          
+          try {
+            // 调用API进行语音合成
+            await api.voice.textToSpeech(text, options);
+          } catch (apiError) {
+            console.error('API语音合成失败:', apiError);
+            // 失败时回退到本地语音合成
+            await api.audio.speak(text, options);
+          }
+        } else {
+          // 如果API服务不可用，使用本地语音合成
+          await api.audio.speak(text, {
+            voice: 'xiaoyan',
+            speed: 0,
+            volume: 80,
+            pitch: 5,
+            region: 'shanghai'
+          });
+        }
+      } catch (error) {
+        console.error('语音合成失败:', error);
       }
     }
   };

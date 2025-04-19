@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,13 +13,12 @@ import {
   Button,
   IconButton,
   TextInput,
-  Divider,
   useTheme,
 } from 'react-native-paper';
 import { CommonImages } from './assets/images';
 
 const PostDetail = ({ route, navigation }) => {
-  const { postId, onPostUpdate } = route.params;
+  const { postId } = route.params;
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState([
     {
@@ -31,6 +30,13 @@ const PostDetail = ({ route, navigation }) => {
   ]);
   const theme = useTheme();
 
+  useEffect(() => {
+    if (route.params?.onPostUpdate) {
+      navigation.setOptions({
+        onPostUpdate: route.params.onPostUpdate
+      });
+    }
+  }, [navigation, route.params]);
   
   const post = {
     id: postId,
@@ -47,6 +53,10 @@ const PostDetail = ({ route, navigation }) => {
   };
 
   const handleLike = () => {
+    const onPostUpdate = navigation.getState().routes.find(
+      route => route.name === 'PostDetail'
+    )?.options?.onPostUpdate;
+    
     if (onPostUpdate) {
       onPostUpdate(postId, {
         likes: post.likes + 1
@@ -64,6 +74,10 @@ const PostDetail = ({ route, navigation }) => {
       };
       setComments(prevComments => [newComment, ...prevComments]);
       setComment('');
+      
+      const onPostUpdate = navigation.getState().routes.find(
+        route => route.name === 'PostDetail'
+      )?.options?.onPostUpdate;
       
       if (onPostUpdate) {
         onPostUpdate(postId, {

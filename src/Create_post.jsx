@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,13 +18,20 @@ import {
 } from 'react-native-paper';
 
 const CreatePost = ({ route, navigation }) => {
-  const { onPostCreated } = route.params;
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState([]);
   const [newTag, setNewTag] = useState('');
   const theme = useTheme();
+
+  useEffect(() => {
+    if (route.params?.onPostCreated) {
+      navigation.setOptions({
+        onPostCreated: route.params.onPostCreated
+      });
+    }
+  }, [navigation, route.params]);
 
   const categories = [
     '清洁技巧',
@@ -75,6 +82,10 @@ const CreatePost = ({ route, navigation }) => {
         likes: 0,
         comments: []
       };
+
+      const onPostCreated = navigation.getState().routes.find(
+        route => route.name === 'CreatePost'
+      )?.options?.onPostCreated;
 
       if (onPostCreated) {
         onPostCreated(newPost);

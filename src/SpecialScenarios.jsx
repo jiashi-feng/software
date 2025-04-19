@@ -12,10 +12,6 @@ import {
   Divider,
   useTheme,
   Title,
-  Subheading,
-  IconButton,
-  Chip,
-  Card,
   Paragraph,
 } from 'react-native-paper';
 import CustomIcon from './components/CustomIcon';

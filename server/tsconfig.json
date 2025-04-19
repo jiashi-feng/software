@@ -7,9 +7,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": ["./node_modules/@types", "./src/types", "./types"],
+    "typeRoots": ["./node_modules/@types", "voice-service/types", "./types"],
     "noImplicitAny": false
   },
-  "include": ["src/**/*", "types/**/*"],
+  "include": ["src/**/*", "types/**/*", "voice-service/types", "voice-service/services", "voice-service/routes", "voice-service/controllers"],
   "exclude": ["node_modules"]
 } 

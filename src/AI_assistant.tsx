@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   TextInput,
@@ -20,11 +19,17 @@ import {
   Chip,
 } from 'react-native-paper';
 import {CommonImages} from './assets/images';
-import { MixedVoiceService } from './services/MixedVoiceService';
-import { TaskService } from './services/TaskService';
-import { Task } from './types/Task';
+import api from './services/api';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+
+interface Task {
+  id: string;
+  title: string;
+  completed: boolean;
+  dueDate?: Date;
+  priority: string;
+}
 
 interface Message {
   id: string;
@@ -86,8 +91,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
     
     
     try {
-      const tasks = TaskService.getAllTasks();
-      setTasks(tasks);
+      const localTasks = api.local.getAllTasks();
+      setTasks(localTasks as Task[]);
     } catch (error) {
       
     }
@@ -119,7 +124,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
       
       try {
         
-        await MixedVoiceService.startRecording();
+        await api.audio.startRecording();
       } catch (recordingError) {
         
         
@@ -149,7 +154,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
       
       try {
         
-        const recognizedText = await MixedVoiceService.stopRecording();
+        const recognizedText = await api.audio.stopRecording();
         
         if (recognizedText) {
           setInputText(recognizedText);
@@ -182,9 +187,9 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
       setTimeout(() => {
         
         if (userMessage.includes('今晚') && userMessage.includes('做什么')) {
-          const pendingTasks = TaskService.getPendingTasks();
+          const pendingTasks = api.local.getPendingTasks() as Task[];
           if (pendingTasks.length > 0) {
-            const taskList = pendingTasks.map((task: Task) => task.title).join('、');
+            const taskList = pendingTasks.map(task => task.title).join('、');
             resolve(`今晚你需要完成这些任务：${taskList}。需要我帮你安排顺序吗？`);
           } else {
             resolve('今晚没有待完成的任务，你可以好好休息了！');
@@ -194,8 +199,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
         else if (userMessage.includes('提醒我') || userMessage.includes('添加任务')) {
           const taskMatch = userMessage.match(/提醒我(.+)/) || userMessage.match(/添加任务(.+)/);
           if (taskMatch && taskMatch[1]) {
-            const newTask = TaskService.addTask(taskMatch[1].trim());
-            setTasks(TaskService.getAllTasks());
+            const newTask = api.local.addTask(taskMatch[1].trim()) as Task;
+            setTasks(api.local.getAllTasks() as Task[]);
             resolve(`好的，我已经添加了任务：${newTask.title}`);
           } else {
             resolve('抱歉，我没有理解你想添加什么任务，能再说一次吗？');
@@ -203,12 +208,12 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
         }
         
         else if (userMessage.includes('完成') || userMessage.includes('做完了')) {
-          const allTasks = TaskService.getAllTasks();
+          const allTasks = api.local.getAllTasks() as Task[];
           for (const task of allTasks) {
             if (userMessage.includes(task.title)) {
-              const updatedTask = TaskService.updateTaskStatus(task.id, true);
+              const updatedTask = api.local.updateTaskStatus(task.id, true) as Task | null;
               if (updatedTask) {
-                setTasks(TaskService.getAllTasks());
+                setTasks(api.local.getAllTasks() as Task[]);
                 resolve(`太棒了！你已经完成了"${updatedTask.title}"，今天辛苦了，喝杯奶茶奖励自己吧！`);
                 return;
               }
@@ -269,7 +274,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
     
     try {
       
-      await MixedVoiceService.speak(aiResponse, {
+      await api.audio.speak(aiResponse, {
         voice: 'xiaoyan',
         speed: 0,
         volume: 80,
@@ -316,7 +321,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
   
   
   const renderTaskList = () => {
-    const pendingTasks = TaskService.getPendingTasks();
+    const pendingTasks = api.local.getPendingTasks() as Task[];
     
     if (pendingTasks.length === 0) return null;
     
@@ -324,15 +329,15 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
       <Surface style={styles.tasksContainer}>
         <Text style={styles.taskTitle}>待完成任务：</Text>
         <View style={styles.chipContainer}>
-          {pendingTasks.map((task: Task) => (
+          {pendingTasks.map((task) => (
             <Chip
               key={task.id}
               icon="checkbox-blank-circle-outline"
               mode="outlined"
               style={styles.taskChip}
               onPress={() => {
-                TaskService.updateTaskStatus(task.id, true);
-                setTasks(TaskService.getAllTasks());
+                api.local.updateTaskStatus(task.id, true);
+                setTasks(api.local.getAllTasks() as Task[]);
                 handleSendMessage(`我完成了${task.title}`);
               }}
             >
@@ -343,6 +348,22 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ route, navigation }) => {
       </Surface>
     );
   };
+  
+  useEffect(() => {
+    const checkServices = async () => {
+      try {
+        const isTaskServiceAvailable = await api.checkTaskServiceHealth();
+        const isVoiceServiceAvailable = await api.checkVoiceServiceHealth();
+        
+        console.log('任务服务可用:', isTaskServiceAvailable);
+        console.log('语音服务可用:', isVoiceServiceAvailable);
+      } catch (error) {
+        console.error('服务健康检查失败:', error);
+      }
+    };
+    
+    checkServices();
+  }, []);
   
   return (
     <KeyboardAvoidingView
@@ -498,7 +519,7 @@ const styles = StyleSheet.create({
   },
   taskChip: {
     margin: 4,
-  },
+  }
 });
 
 export default AIAssistant; 

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import {
-  View,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
 } from 'react-native';
 import {
   Text,
@@ -13,7 +11,6 @@ import {
   Button,
   Divider,
   useTheme,
-  IconButton,
 } from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
 
